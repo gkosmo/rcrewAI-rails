@@ -1,0 +1,136 @@
+<div class="page-header">
+  <h1><%= @agent.name %></h1>
+  <div class="actions">
+    <%= link_to "Edit Agent", edit_agent_path(@agent), class: "btn btn-primary" %>
+    <%= link_to "Manage Tools", agent_tools_path(@agent), class: "btn" %>
+    <% if @agent.crew %>
+      <%= link_to "Back to Crew", @agent.crew, class: "btn" %>
+    <% else %>
+      <%= link_to "All Agents", agents_path, class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="agent-details">
+  <div class="details-grid">
+    <div class="detail-section">
+      <h3>Basic Information</h3>
+      <div class="detail-item">
+        <strong>Role:</strong> <%= @agent.role %>
+      </div>
+      <div class="detail-item">
+        <strong>Goal:</strong>
+        <p><%= @agent.goal %></p>
+      </div>
+      <div class="detail-item">
+        <strong>Backstory:</strong>
+        <p><%= @agent.backstory %></p>
+      </div>
+      <% if @agent.crew %>
+        <div class="detail-item">
+          <strong>Crew:</strong> <%= link_to @agent.crew.name, @agent.crew %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="detail-section">
+      <h3>Configuration</h3>
+      <div class="detail-item">
+        <strong>Status:</strong>
+        <span class="badge <%= @agent.active ? 'badge-success' : 'badge-warning' %>">
+          <%= @agent.active ? 'Active' : 'Inactive' %>
+        </span>
+      </div>
+      <div class="detail-item">
+        <strong>Verbose Logging:</strong>
+        <span class="badge <%= @agent.verbose ? 'badge-info' : 'badge-secondary' %>">
+          <%= @agent.verbose ? 'Enabled' : 'Disabled' %>
+        </span>
+      </div>
+      <div class="detail-item">
+        <strong>Allow Delegation:</strong>
+        <span class="badge <%= @agent.allow_delegation ? 'badge-success' : 'badge-secondary' %>">
+          <%= @agent.allow_delegation ? 'Enabled' : 'Disabled' %>
+        </span>
+      </div>
+      <% if @agent.max_iter %>
+        <div class="detail-item">
+          <strong>Max Iterations:</strong> <%= @agent.max_iter %>
+        </div>
+      <% end %>
+      <% if @agent.max_execution_time %>
+        <div class="detail-item">
+          <strong>Max Execution Time:</strong> <%= @agent.max_execution_time %> seconds
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <% if @agent.llm_config.present? %>
+    <div class="detail-section">
+      <h3>LLM Configuration</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@agent.llm_config) %></pre>
+    </div>
+  <% end %>
+
+  <% if @agent.tools_config.present? %>
+    <div class="detail-section">
+      <h3>Tools Configuration</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@agent.tools_config) %></pre>
+    </div>
+  <% end %>
+</div>
+
+<div class="related-sections">
+  <div class="section">
+    <div class="section-header">
+      <h2>Tools (<%= @tools.count %>)</h2>
+      <%= link_to "Manage Tools", agent_tools_path(@agent), class: "btn btn-sm" %>
+    </div>
+    
+    <% if @tools.any? %>
+      <div class="tools-list">
+        <% @tools.each do |tool| %>
+          <div class="tool-item">
+            <h4><%= link_to tool.name, [@agent, tool] %></h4>
+            <p><%= truncate(tool.description, length: 100) %></p>
+            <span class="badge"><%= tool.tool_class %></span>
+            <% unless tool.active %>
+              <span class="badge badge-warning">Inactive</span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p>No tools configured for this agent.</p>
+    <% end %>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Tasks (<%= @agent.tasks.count %>)</h2>
+    </div>
+    
+    <% if @agent.tasks.any? %>
+      <div class="tasks-list">
+        <% @agent.tasks.each do |task| %>
+          <div class="task-item">
+            <h4><%= link_to "Task ##{task.id}", task %></h4>
+            <p><%= truncate(task.description, length: 100) %></p>
+            <% unless task.active %>
+              <span class="badge badge-warning">Inactive</span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p>No tasks assigned to this agent.</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="danger-zone">
+  <%= link_to "Delete Agent", @agent, method: :delete, 
+      confirm: "Are you sure you want to delete this agent? This action cannot be undone.", 
+      class: "btn btn-danger" %>
+</div>

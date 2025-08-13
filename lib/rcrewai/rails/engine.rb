@@ -2,6 +2,22 @@ module RcrewAI
   module Rails
     class Engine < ::Rails::Engine
       isolate_namespace RcrewAI::Rails
+      
+      # Fix inflector for RcrewAI constant
+      ActiveSupport::Inflector.inflections(:en) do |inflect|
+        inflect.acronym 'AI'
+        inflect.acronym 'RcrewAI'
+      end
+      
+      config.autoload_paths += %W[
+        #{config.root}/app
+        #{config.root}/lib
+      ]
+      
+      config.eager_load_paths += %W[
+        #{config.root}/app
+        #{config.root}/lib
+      ]
 
       config.generators do |g|
         g.test_framework :rspec
@@ -14,17 +30,7 @@ module RcrewAI
         app.config.assets.paths << root.join("app/assets/javascripts")
       end
 
-      initializer "rcrewai_rails.load_models" do
-        ActiveSupport.on_load(:active_record) do
-          Dir[Engine.root.join("app/models/rcrewai/rails/*.rb")].each { |f| require f }
-        end
-      end
 
-      initializer "rcrewai_rails.load_jobs" do
-        ActiveSupport.on_load(:active_job) do
-          Dir[Engine.root.join("app/jobs/rcrewai/rails/*.rb")].each { |f| require f }
-        end
-      end
 
       initializer "rcrewai_rails.configure" do |app|
         RcrewAI::Rails.configure do |config|

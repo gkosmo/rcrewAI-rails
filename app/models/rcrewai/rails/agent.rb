@@ -4,8 +4,8 @@ module RcrewAI
       self.table_name = "rcrewai_agents"
       
       belongs_to :crew
-      has_many :task_assignments, dependent: :destroy
-      has_many :tasks, through: :task_assignments
+      has_many :tasks, dependent: :nullify
+      has_many :tools, class_name: 'RcrewAI::Rails::Tool', dependent: :destroy
 
       validates :name, presence: true
       validates :role, presence: true

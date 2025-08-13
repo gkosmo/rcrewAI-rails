@@ -1,0 +1,101 @@
+<div class="page-header">
+  <h1>New Task</h1>
+  <div class="actions">
+    <% if @task.crew %>
+      <%= link_to "Back to Crew", @task.crew, class: "btn" %>
+    <% else %>
+      <%= link_to "All Tasks", tasks_path, class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="form-container">
+  <%= form_with model: [@crew, @task].compact, local: true do |form| %>
+    <% if @task.errors.any? %>
+      <div class="alert alert-error">
+        <h4><%= pluralize(@task.errors.count, "error") %> prohibited this task from being saved:</h4>
+        <ul>
+          <% @task.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :description, class: "form-label" %>
+      <%= form.text_area :description, class: "form-input", rows: 4, required: true %>
+      <span class="form-help">Detailed description of what this task should accomplish</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :expected_output, class: "form-label" %>
+      <%= form.text_area :expected_output, class: "form-input", rows: 3, required: true %>
+      <span class="form-help">Description of the expected output from this task</span>
+    </div>
+
+    <% unless @crew %>
+      <div class="form-group">
+        <%= form.label :crew_id, "Crew", class: "form-label" %>
+        <%= form.select :crew_id, 
+            options_from_collection_for_select(RcrewAI::Rails::Crew.all, :id, :name, @task.crew_id),
+            { prompt: 'Select a crew (optional)' }, 
+            { class: "form-select" } %>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :agent_id, "Assigned Agent", class: "form-label" %>
+      <% agents = @crew ? @crew.agents : RcrewAI::Rails::Agent.all %>
+      <%= form.select :agent_id, 
+          options_from_collection_for_select(agents, :id, :name, @task.agent_id),
+          { prompt: 'Select an agent' }, 
+          { class: "form-select" } %>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :async_execution, class: "form-label" %>
+      <%= form.check_box :async_execution, class: "form-checkbox" %>
+      <span class="form-help">Execute this task asynchronously</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :order_index, "Execution Order", class: "form-label" %>
+      <%= form.number_field :order_index, class: "form-input", min: 0 %>
+      <span class="form-help">Order in which this task should be executed (0 = first)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :output_file, class: "form-label" %>
+      <%= form.text_field :output_file, class: "form-input" %>
+      <span class="form-help">File path where output should be saved (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :context, class: "form-label" %>
+      <%= form.text_area :context, class: "form-input", rows: 3 %>
+      <span class="form-help">Additional context for the task (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :config, "Configuration (JSON)", class: "form-label" %>
+      <%= form.text_area :config, class: "form-input", rows: 3 %>
+      <span class="form-help">Task configuration in JSON format (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :tools_config, "Tools Configuration (JSON)", class: "form-label" %>
+      <%= form.text_area :tools_config, class: "form-input", rows: 3 %>
+      <span class="form-help">Tools configuration in JSON format (optional)</span>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Create Task", class: "btn btn-primary" %>
+      <% if @crew %>
+        <%= link_to "Cancel", @crew, class: "btn btn-secondary" %>
+      <% else %>
+        <%= link_to "Cancel", tasks_path, class: "btn btn-secondary" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

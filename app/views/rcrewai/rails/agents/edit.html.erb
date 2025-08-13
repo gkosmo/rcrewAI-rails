@@ -1,0 +1,107 @@
+<div class="page-header">
+  <h1>Edit Agent: <%= @agent.name %></h1>
+  <div class="actions">
+    <%= link_to "View Agent", @agent, class: "btn" %>
+    <% if @agent.crew %>
+      <%= link_to "Back to Crew", @agent.crew, class: "btn" %>
+    <% else %>
+      <%= link_to "All Agents", agents_path, class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="form-container">
+  <%= form_with model: @agent, local: true do |form| %>
+    <% if @agent.errors.any? %>
+      <div class="alert alert-error">
+        <h4><%= pluralize(@agent.errors.count, "error") %> prohibited this agent from being saved:</h4>
+        <ul>
+          <% @agent.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :name, class: "form-label" %>
+      <%= form.text_field :name, class: "form-input", required: true %>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :role, class: "form-label" %>
+      <%= form.text_field :role, class: "form-input", required: true %>
+      <span class="form-help">The role this agent plays in the crew</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :goal, class: "form-label" %>
+      <%= form.text_area :goal, class: "form-input", rows: 3, required: true %>
+      <span class="form-help">What this agent is trying to achieve</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :backstory, class: "form-label" %>
+      <%= form.text_area :backstory, class: "form-input", rows: 4, required: true %>
+      <span class="form-help">The agent's background and experience</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :crew_id, "Crew", class: "form-label" %>
+      <%= form.select :crew_id, 
+          options_from_collection_for_select(RcrewAI::Rails::Crew.all, :id, :name, @agent.crew_id),
+          { prompt: 'Select a crew (optional)' }, 
+          { class: "form-select" } %>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :verbose, class: "form-label" %>
+      <%= form.check_box :verbose, class: "form-checkbox" %>
+      <span class="form-help">Enable verbose logging for this agent</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :allow_delegation, class: "form-label" %>
+      <%= form.check_box :allow_delegation, class: "form-checkbox" %>
+      <span class="form-help">Allow this agent to delegate tasks to other agents</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :max_iter, "Max Iterations", class: "form-label" %>
+      <%= form.number_field :max_iter, class: "form-input", min: 1 %>
+      <span class="form-help">Maximum number of iterations (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :max_execution_time, "Max Execution Time (seconds)", class: "form-label" %>
+      <%= form.number_field :max_execution_time, class: "form-input", min: 1 %>
+      <span class="form-help">Maximum execution time in seconds (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :llm_config, "LLM Configuration (JSON)", class: "form-label" %>
+      <%= form.text_area :llm_config, class: "form-input", rows: 3 %>
+      <span class="form-help">LLM configuration in JSON format (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :tools_config, "Tools Configuration (JSON)", class: "form-label" %>
+      <%= form.text_area :tools_config, class: "form-input", rows: 3 %>
+      <span class="form-help">Tools configuration in JSON format (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :active, class: "form-label" %>
+      <%= form.check_box :active, class: "form-checkbox" %>
+      <span class="form-help">Agent is active</span>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Update Agent", class: "btn btn-primary" %>
+      <%= link_to "Cancel", @agent, class: "btn btn-secondary" %>
+      <%= link_to "Delete Agent", @agent, method: :delete, 
+          confirm: "Are you sure you want to delete this agent?", 
+          class: "btn btn-danger" %>
+    </div>
+  <% end %>
+</div>

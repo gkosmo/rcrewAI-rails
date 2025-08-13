@@ -1,0 +1,129 @@
+<div class="page-header">
+  <h1>Task #<%= @task.id %></h1>
+  <div class="actions">
+    <%= link_to "Edit Task", edit_task_path(@task), class: "btn btn-primary" %>
+    <% if @task.crew %>
+      <%= link_to "Back to Crew", @task.crew, class: "btn" %>
+    <% else %>
+      <%= link_to "All Tasks", tasks_path, class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="task-details">
+  <div class="details-grid">
+    <div class="detail-section">
+      <h3>Task Information</h3>
+      <div class="detail-item">
+        <strong>Description:</strong>
+        <p><%= @task.description %></p>
+      </div>
+      <div class="detail-item">
+        <strong>Expected Output:</strong>
+        <p><%= @task.expected_output %></p>
+      </div>
+      <% if @task.crew %>
+        <div class="detail-item">
+          <strong>Crew:</strong> <%= link_to @task.crew.name, @task.crew %>
+        </div>
+      <% end %>
+      <% if @task.agent %>
+        <div class="detail-item">
+          <strong>Assigned Agent:</strong> <%= link_to @task.agent.name, @task.agent %>
+        </div>
+      <% end %>
+      <% if @task.output_file %>
+        <div class="detail-item">
+          <strong>Output File:</strong> <%= @task.output_file %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="detail-section">
+      <h3>Configuration</h3>
+      <div class="detail-item">
+        <strong>Status:</strong>
+        <span class="badge <%= @task.active ? 'badge-success' : 'badge-warning' %>">
+          <%= @task.active ? 'Active' : 'Inactive' %>
+        </span>
+      </div>
+      <div class="detail-item">
+        <strong>Async Execution:</strong>
+        <span class="badge <%= @task.async_execution ? 'badge-info' : 'badge-secondary' %>">
+          <%= @task.async_execution ? 'Enabled' : 'Disabled' %>
+        </span>
+      </div>
+      <div class="detail-item">
+        <strong>Order Index:</strong> <%= @task.order_index || 'Not set' %>
+      </div>
+    </div>
+  </div>
+
+  <% if @task.context.present? %>
+    <div class="detail-section">
+      <h3>Context</h3>
+      <pre class="code-block"><%= @task.context %></pre>
+    </div>
+  <% end %>
+
+  <% if @task.config.present? %>
+    <div class="detail-section">
+      <h3>Configuration</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@task.config) %></pre>
+    </div>
+  <% end %>
+
+  <% if @task.tools_config.present? %>
+    <div class="detail-section">
+      <h3>Tools Configuration</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@task.tools_config) %></pre>
+    </div>
+  <% end %>
+</div>
+
+<div class="related-sections">
+  <div class="section">
+    <div class="section-header">
+      <h2>Dependencies (<%= @dependencies.count %>)</h2>
+    </div>
+    
+    <% if @dependencies.any? %>
+      <div class="dependencies-list">
+        <% @dependencies.each do |dependency| %>
+          <div class="dependency-item">
+            <h4><%= link_to "Task ##{dependency.id}", dependency %></h4>
+            <p><%= truncate(dependency.description, length: 100) %></p>
+            <div class="dependency-actions">
+              <%= link_to "Remove", remove_dependency_task_path(@task, dependency_id: dependency.id), 
+                  method: :delete, class: "btn btn-sm btn-danger",
+                  confirm: "Remove this dependency?" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p>This task has no dependencies.</p>
+    <% end %>
+    
+    <div class="add-dependency">
+      <h4>Add Dependency</h4>
+      <%= form_tag add_dependency_task_path(@task), method: :post do %>
+        <%= select_tag :dependency_id,
+            options_from_collection_for_select(
+              RcrewAI::Rails::Task.where.not(id: [@task.id] + @task.dependencies.pluck(:id)),
+              :id, 
+              ->(task) { "Task ##{task.id}: #{truncate(task.description, length: 50)}" }
+            ),
+            { prompt: 'Select a task to add as dependency' },
+            { class: "form-select" } %>
+        <%= submit_tag "Add Dependency", class: "btn btn-sm btn-primary" %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<div class="danger-zone">
+  <%= link_to "Delete Task", @task, method: :delete, 
+      confirm: "Are you sure you want to delete this task? This action cannot be undone.", 
+      class: "btn btn-danger" %>
+</div>

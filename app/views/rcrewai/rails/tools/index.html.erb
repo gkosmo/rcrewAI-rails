@@ -1,0 +1,48 @@
+<div class="page-header">
+  <h1>Tools for <%= link_to @agent.name, @agent %></h1>
+  <div class="actions">
+    <%= link_to "New Tool", new_agent_tool_path(@agent), class: "btn btn-primary" %>
+    <%= link_to "Back to Agent", @agent, class: "btn" %>
+  </div>
+</div>
+
+<div class="tools-grid">
+  <% if @tools.any? %>
+    <% @tools.each do |tool| %>
+      <div class="tool-card">
+        <div class="tool-header">
+          <h3><%= link_to tool.name, [@agent, tool] %></h3>
+          <span class="badge class-badge"><%= tool.tool_class %></span>
+        </div>
+        
+        <div class="tool-info">
+          <div class="info-item">
+            <strong>Description:</strong>
+            <p><%= truncate(tool.description, length: 150) %></p>
+          </div>
+        </div>
+
+        <div class="tool-meta">
+          <% unless tool.active %>
+            <span class="badge badge-warning">Inactive</span>
+          <% else %>
+            <span class="badge badge-success">Active</span>
+          <% end %>
+        </div>
+
+        <div class="tool-actions">
+          <%= link_to "View", [@agent, tool], class: "btn btn-sm" %>
+          <%= link_to "Edit", edit_agent_tool_path(@agent, tool), class: "btn btn-sm" %>
+          <%= link_to "Delete", [@agent, tool], method: :delete, 
+              confirm: "Are you sure?", class: "btn btn-sm btn-danger" %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <h3>No tools found</h3>
+      <p>This agent doesn't have any tools configured yet.</p>
+      <%= link_to "Add First Tool", new_agent_tool_path(@agent), class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

@@ -7,11 +7,11 @@ module RcrewAI
         @executions = Execution.includes(:crew)
         @executions = @executions.where(crew_id: params[:crew_id]) if params[:crew_id]
         @executions = @executions.where(status: params[:status]) if params[:status]
-        @executions = @executions.recent.page(params[:page])
+        @executions = @executions.recent.limit(20)
       end
 
       def show
-        @logs = @execution.execution_logs.recent.page(params[:page])
+        @logs = @execution.execution_logs.recent.limit(50)
         
         respond_to do |format|
           format.html

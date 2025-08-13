@@ -1,0 +1,56 @@
+<div class="page-header">
+  <h1>New Tool for <%= link_to @agent.name, @agent %></h1>
+  <div class="actions">
+    <%= link_to "Back to Agent", @agent, class: "btn" %>
+  </div>
+</div>
+
+<div class="form-container">
+  <%= form_with model: [@agent, @tool], local: true do |form| %>
+    <% if @tool.errors.any? %>
+      <div class="alert alert-error">
+        <h4><%= pluralize(@tool.errors.count, "error") %> prohibited this tool from being saved:</h4>
+        <ul>
+          <% @tool.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="form-group">
+      <%= form.label :name, class: "form-label" %>
+      <%= form.text_field :name, class: "form-input", required: true %>
+      <span class="form-help">Name of the tool</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :description, class: "form-label" %>
+      <%= form.text_area :description, class: "form-input", rows: 3, required: true %>
+      <span class="form-help">Description of what this tool does</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :tool_class, "Tool Class", class: "form-label" %>
+      <%= form.text_field :tool_class, class: "form-input", required: true %>
+      <span class="form-help">The class name of the tool implementation</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :config, "Configuration (JSON)", class: "form-label" %>
+      <%= form.text_area :config, class: "form-input", rows: 5 %>
+      <span class="form-help">Tool configuration in JSON format (optional)</span>
+    </div>
+
+    <div class="form-group">
+      <%= form.label :active, class: "form-label" %>
+      <%= form.check_box :active, class: "form-checkbox", checked: true %>
+      <span class="form-help">Tool is active and available for use</span>
+    </div>
+
+    <div class="form-actions">
+      <%= form.submit "Create Tool", class: "btn btn-primary" %>
+      <%= link_to "Cancel", @agent, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>

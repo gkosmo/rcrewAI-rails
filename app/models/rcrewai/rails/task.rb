@@ -4,8 +4,7 @@ module RcrewAI
       self.table_name = "rcrewai_tasks"
       
       belongs_to :crew
-      has_many :task_assignments, dependent: :destroy
-      has_many :agents, through: :task_assignments
+      belongs_to :agent, optional: true
       has_many :task_dependencies, foreign_key: :task_id, dependent: :destroy
       has_many :dependencies, through: :task_dependencies, source: :dependency
 
@@ -17,7 +16,7 @@ module RcrewAI
       serialize :output_pydantic, coder: JSON
       serialize :tools, coder: JSON, type: Array
 
-      scope :ordered, -> { order(position: :asc) }
+      scope :ordered, -> { order(:order_index) }
 
       def to_rcrew_task
         RCrewAI::Task.new(
@@ -34,9 +33,6 @@ module RcrewAI
         )
       end
 
-      def agent
-        agents.first
-      end
 
       def instantiated_tools
         return [] if tools.blank?

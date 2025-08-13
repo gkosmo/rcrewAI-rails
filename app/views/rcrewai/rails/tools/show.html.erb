@@ -1,0 +1,47 @@
+<div class="page-header">
+  <h1><%= @tool.name %></h1>
+  <div class="actions">
+    <%= link_to "Edit Tool", edit_agent_tool_path(@agent, @tool), class: "btn btn-primary" %>
+    <%= link_to "Back to Agent", @agent, class: "btn" %>
+  </div>
+</div>
+
+<div class="tool-details">
+  <div class="details-grid">
+    <div class="detail-section">
+      <h3>Tool Information</h3>
+      <div class="detail-item">
+        <strong>Name:</strong> <%= @tool.name %>
+      </div>
+      <div class="detail-item">
+        <strong>Description:</strong>
+        <p><%= @tool.description %></p>
+      </div>
+      <div class="detail-item">
+        <strong>Tool Class:</strong> <%= @tool.tool_class %>
+      </div>
+      <div class="detail-item">
+        <strong>Agent:</strong> <%= link_to @agent.name, @agent %>
+      </div>
+      <div class="detail-item">
+        <strong>Status:</strong>
+        <span class="badge <%= @tool.active ? 'badge-success' : 'badge-warning' %>">
+          <%= @tool.active ? 'Active' : 'Inactive' %>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <% if @tool.config.present? %>
+    <div class="detail-section">
+      <h3>Configuration</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@tool.config) %></pre>
+    </div>
+  <% end %>
+</div>
+
+<div class="danger-zone">
+  <%= link_to "Delete Tool", [@agent, @tool], method: :delete, 
+      confirm: "Are you sure you want to delete this tool? This action cannot be undone.", 
+      class: "btn btn-danger" %>
+</div>

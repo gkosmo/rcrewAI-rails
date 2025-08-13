@@ -1,0 +1,81 @@
+<div class="page-header">
+  <h1>
+    Agents
+    <% if @crew %>
+      for <%= link_to @crew.name, @crew %>
+    <% end %>
+  </h1>
+  <div class="actions">
+    <%= link_to "New Agent", new_agent_path(@crew), class: "btn btn-primary" %>
+    <% if @crew %>
+      <%= link_to "Back to Crew", @crew, class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="agents-grid">
+  <% if @agents.any? %>
+    <% @agents.each do |agent| %>
+      <div class="agent-card">
+        <div class="agent-header">
+          <h3><%= link_to agent.name, agent %></h3>
+          <span class="badge role-badge"><%= agent.role %></span>
+        </div>
+        
+        <div class="agent-info">
+          <div class="info-item">
+            <strong>Goal:</strong>
+            <p><%= truncate(agent.goal, length: 100) %></p>
+          </div>
+          
+          <div class="info-item">
+            <strong>Backstory:</strong>
+            <p><%= truncate(agent.backstory, length: 120) %></p>
+          </div>
+        </div>
+
+        <div class="agent-meta">
+          <% if agent.crew %>
+            <span class="badge">Crew: <%= link_to agent.crew.name, agent.crew %></span>
+          <% end %>
+          <% if agent.verbose %>
+            <span class="badge badge-info">Verbose</span>
+          <% end %>
+          <% if agent.allow_delegation %>
+            <span class="badge badge-success">Delegation</span>
+          <% end %>
+          <% unless agent.active %>
+            <span class="badge badge-warning">Inactive</span>
+          <% end %>
+        </div>
+
+        <div class="agent-stats">
+          <div class="stat">
+            <strong>Tools:</strong> <%= agent.tools.count %>
+          </div>
+          <div class="stat">
+            <strong>Tasks:</strong> <%= agent.tasks.count %>
+          </div>
+        </div>
+
+        <div class="agent-actions">
+          <%= link_to "View", agent, class: "btn btn-sm" %>
+          <%= link_to "Edit", edit_agent_path(agent), class: "btn btn-sm" %>
+          <%= link_to "Tools", agent_tools_path(agent), class: "btn btn-sm" %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <h3>No agents found</h3>
+      <p>
+        <% if @crew %>
+          This crew doesn't have any agents yet.
+        <% else %>
+          No agents have been created yet.
+        <% end %>
+      </p>
+      <%= link_to "Create First Agent", new_agent_path(@crew), class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

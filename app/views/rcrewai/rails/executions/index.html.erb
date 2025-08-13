@@ -1,0 +1,91 @@
+<div class="page-header">
+  <h1>Executions</h1>
+  <% if params[:crew_id] %>
+    <% crew = RcrewAI::Rails::Crew.find(params[:crew_id]) %>
+    <p>Showing executions for crew: <%= link_to crew.name, crew %></p>
+  <% end %>
+</div>
+
+<div class="filters">
+  <%= form_tag executions_path, method: :get, local: true, class: "filter-form" do %>
+    <%= select_tag :status, 
+        options_for_select([
+          ['All Statuses', ''],
+          ['Pending', 'pending'],
+          ['Running', 'running'],
+          ['Completed', 'completed'],
+          ['Failed', 'failed'],
+          ['Cancelled', 'cancelled']
+        ], params[:status]), 
+        { class: "form-select", onchange: "this.form.submit();" } %>
+    
+    <%= select_tag :crew_id,
+        options_for_select([['All Crews', '']] + RcrewAI::Rails::Crew.all.map { |c| [c.name, c.id] }, params[:crew_id]),
+        { class: "form-select", onchange: "this.form.submit();" } %>
+  <% end %>
+</div>
+
+<div class="executions-table">
+  <% if @executions.any? %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Crew</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Completed</th>
+          <th>Duration</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @executions.each do |execution| %>
+          <tr class="execution-row status-<%= execution.status %>">
+            <td>
+              <%= link_to "##{execution.id}", execution %>
+            </td>
+            <td>
+              <%= link_to execution.crew.name, execution.crew %>
+            </td>
+            <td>
+              <span class="status-badge status-<%= execution.status %>">
+                <%= execution.status.humanize %>
+              </span>
+            </td>
+            <td>
+              <%= execution.started_at&.strftime("%Y-%m-%d %H:%M") || "Not started" %>
+            </td>
+            <td>
+              <%= execution.completed_at&.strftime("%Y-%m-%d %H:%M") || "In progress" %>
+            </td>
+            <td>
+              <%= execution.duration_seconds ? "#{execution.duration_seconds}s" : "N/A" %>
+            </td>
+            <td class="actions">
+              <%= link_to "View", execution, class: "btn btn-sm" %>
+              <% if execution.running? %>
+                <%= button_to "Cancel", cancel_execution_path(execution), 
+                    method: :post, class: "btn btn-sm btn-danger",
+                    confirm: "Are you sure you want to cancel this execution?" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="empty-state">
+      <h3>No executions found</h3>
+      <p>
+        <% if params[:crew_id] || params[:status] %>
+          No executions match your current filters.
+        <% else %>
+          No executions have been run yet.
+        <% end %>
+      </p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Pagination would go here if Kaminari gem is added -->

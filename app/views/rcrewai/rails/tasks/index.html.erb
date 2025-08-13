@@ -1,0 +1,82 @@
+<div class="page-header">
+  <h1>
+    Tasks
+    <% if @crew %>
+      for <%= link_to @crew.name, @crew %>
+    <% end %>
+  </h1>
+  <div class="actions">
+    <%= link_to "New Task", new_task_path(@crew), class: "btn btn-primary" %>
+    <% if @crew %>
+      <%= link_to "Back to Crew", @crew, class: "btn" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="tasks-list">
+  <% if @tasks.any? %>
+    <% @tasks.each do |task| %>
+      <div class="task-card">
+        <div class="task-header">
+          <h3><%= link_to "Task ##{task.id}", task %></h3>
+          <div class="task-meta">
+            <% if task.crew %>
+              <span class="badge">Crew: <%= link_to task.crew.name, task.crew %></span>
+            <% end %>
+            <% if task.agent %>
+              <span class="badge">Agent: <%= link_to task.agent.name, task.agent %></span>
+            <% end %>
+            <% if task.async_execution %>
+              <span class="badge badge-info">Async</span>
+            <% end %>
+            <% unless task.active %>
+              <span class="badge badge-warning">Inactive</span>
+            <% end %>
+          </div>
+        </div>
+        
+        <div class="task-content">
+          <div class="task-description">
+            <strong>Description:</strong>
+            <p><%= truncate(task.description, length: 200) %></p>
+          </div>
+          
+          <div class="task-output">
+            <strong>Expected Output:</strong>
+            <p><%= truncate(task.expected_output, length: 150) %></p>
+          </div>
+        </div>
+
+        <div class="task-dependencies">
+          <% if task.dependencies.any? %>
+            <strong>Dependencies:</strong>
+            <div class="dependency-list">
+              <% task.dependencies.each do |dep| %>
+                <span class="dependency-badge">
+                  <%= link_to "Task ##{dep.id}", dep %>
+                </span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="task-actions">
+          <%= link_to "View", task, class: "btn btn-sm" %>
+          <%= link_to "Edit", edit_task_path(task), class: "btn btn-sm" %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <h3>No tasks found</h3>
+      <p>
+        <% if @crew %>
+          This crew doesn't have any tasks yet.
+        <% else %>
+          No tasks have been created yet.
+        <% end %>
+      </p>
+      <%= link_to "Create First Task", new_task_path(@crew), class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

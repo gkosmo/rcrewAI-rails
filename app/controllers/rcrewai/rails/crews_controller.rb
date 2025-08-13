@@ -4,7 +4,7 @@ module RcrewAI
       before_action :set_crew, only: [:show, :edit, :update, :destroy, :execute]
 
       def index
-        @crews = Crew.includes(:agents, :tasks).page(params[:page])
+        @crews = Crew.includes(:agents, :tasks).all
       end
 
       def show
