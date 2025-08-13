@@ -1,0 +1,42 @@
+<div class="page-header">
+  <h1>Crews</h1>
+  <%= link_to "New Crew", new_crew_path, class: "btn btn-primary" %>
+</div>
+
+<div class="crews-grid">
+  <% @crews.each do |crew| %>
+    <div class="crew-card">
+      <h3><%= link_to crew.name, crew %></h3>
+      <p class="crew-description"><%= crew.description %></p>
+      
+      <div class="crew-meta">
+        <span class="badge"><%= crew.process_type %></span>
+        <span class="badge"><%= crew.agents.count %> agents</span>
+        <span class="badge"><%= crew.tasks.count %> tasks</span>
+      </div>
+
+      <div class="crew-stats">
+        <% stats = crew.execution_stats %>
+        <div class="stat">
+          <strong>Total Runs:</strong> <%= stats[:total] %>
+        </div>
+        <div class="stat">
+          <strong>Success Rate:</strong> 
+          <%= stats[:total] > 0 ? "#{(stats[:successful].to_f / stats[:total] * 100).round}%" : "N/A" %>
+        </div>
+        <div class="stat">
+          <strong>Avg Duration:</strong> 
+          <%= stats[:average_duration] ? "#{stats[:average_duration].round}s" : "N/A" %>
+        </div>
+      </div>
+
+      <div class="crew-actions">
+        <%= link_to "View", crew, class: "btn btn-sm" %>
+        <%= link_to "Edit", edit_crew_path(crew), class: "btn btn-sm" %>
+        <%= button_to "Execute", execute_crew_path(crew), method: :post, class: "btn btn-sm btn-success" %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<%= paginate @crews %>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>RcrewAI Rails</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
+  </head>
+
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <%= link_to "RcrewAI", root_path, class: "navbar-brand" %>
+        <div class="navbar-menu">
+          <%= link_to "Crews", crews_path, class: "navbar-item" %>
+          <%= link_to "Executions", executions_path, class: "navbar-item" %>
+          <%= link_to "Agents", agents_path, class: "navbar-item" %>
+          <%= link_to "Tasks", tasks_path, class: "navbar-item" %>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <% if notice.present? %>
+        <div class="notice"><%= notice %></div>
+      <% end %>
+      <% if alert.present? %>
+        <div class="alert"><%= alert %></div>
+      <% end %>
+      
+      <%= yield %>
+    </main>
+  </body>
+</html>

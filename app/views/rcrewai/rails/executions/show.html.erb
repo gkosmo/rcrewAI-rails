@@ -1,0 +1,92 @@
+<div class="page-header">
+  <h1>Execution #<%= @execution.id %></h1>
+  <div class="actions">
+    <% if @execution.running? %>
+      <%= button_to "Cancel", cancel_execution_path(@execution), method: :post, class: "btn btn-danger" %>
+    <% end %>
+    <%= link_to "Back to Crew", @execution.crew, class: "btn" %>
+  </div>
+</div>
+
+<div class="execution-details">
+  <div class="status-banner status-<%= @execution.status %>">
+    <strong>Status:</strong> <%= @execution.status.humanize %>
+  </div>
+
+  <div class="metadata-grid">
+    <div class="meta-item">
+      <strong>Crew:</strong> <%= link_to @execution.crew.name, @execution.crew %>
+    </div>
+    <div class="meta-item">
+      <strong>Started:</strong> <%= @execution.started_at&.strftime("%Y-%m-%d %H:%M:%S") || "Not started" %>
+    </div>
+    <div class="meta-item">
+      <strong>Completed:</strong> <%= @execution.completed_at&.strftime("%Y-%m-%d %H:%M:%S") || "In progress" %>
+    </div>
+    <div class="meta-item">
+      <strong>Duration:</strong> <%= @execution.duration_seconds ? "#{@execution.duration_seconds} seconds" : "N/A" %>
+    </div>
+  </div>
+
+  <% if @execution.inputs.present? %>
+    <div class="section">
+      <h3>Inputs</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@execution.inputs) %></pre>
+    </div>
+  <% end %>
+
+  <% if @execution.output.present? %>
+    <div class="section">
+      <h3>Output</h3>
+      <pre class="code-block"><%= JSON.pretty_generate(@execution.output) %></pre>
+    </div>
+  <% end %>
+
+  <% if @execution.error_message.present? %>
+    <div class="section error-section">
+      <h3>Error</h3>
+      <p class="error-message"><%= @execution.error_message %></p>
+      <% if @execution.error_details.present? %>
+        <details>
+          <summary>Error Details</summary>
+          <pre class="code-block"><%= JSON.pretty_generate(@execution.error_details) %></pre>
+        </details>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="section">
+  <h2>Execution Logs</h2>
+  
+  <div class="log-filters">
+    <%= link_to "All", execution_logs_path(@execution), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "Errors", execution_logs_path(@execution, level: "error"), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "Warnings", execution_logs_path(@execution, level: "warn"), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "Info", execution_logs_path(@execution, level: "info"), class: "filter-btn", data: { turbo_frame: "logs" } %>
+  </div>
+
+  <%= turbo_frame_tag "logs", data: { turbo_action: "advance" } do %>
+    <div class="logs-container">
+      <% @logs.each do |log| %>
+        <div class="log-entry log-<%= log.level %>">
+          <span class="log-timestamp"><%= log.timestamp.strftime("%H:%M:%S.%L") %></span>
+          <span class="log-level"><%= log.level.upcase %></span>
+          <span class="log-message"><%= log.message %></span>
+          <% if log.details.present? %>
+            <details class="log-details">
+              <summary>Details</summary>
+              <pre><%= JSON.pretty_generate(log.details) %></pre>
+            </details>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    
+    <%= paginate @logs %>
+  <% end %>
+</div>
+
+<% if @execution.running? %>
+  <%= turbo_stream_from @execution, :logs %>
+<% end %>

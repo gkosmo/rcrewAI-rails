@@ -1,0 +1,95 @@
+<div class="page-header">
+  <h1><%= @crew.name %></h1>
+  <div class="actions">
+    <%= link_to "Edit", edit_crew_path(@crew), class: "btn" %>
+    <%= button_to "Execute", execute_crew_path(@crew), method: :post, class: "btn btn-success" %>
+    <%= button_to "Delete", @crew, method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-danger" %>
+  </div>
+</div>
+
+<div class="crew-details">
+  <p><%= @crew.description %></p>
+  
+  <div class="metadata">
+    <div class="meta-item">
+      <strong>Process Type:</strong> <%= @crew.process_type %>
+    </div>
+    <div class="meta-item">
+      <strong>Memory:</strong> <%= @crew.memory_enabled ? "Enabled" : "Disabled" %>
+    </div>
+    <div class="meta-item">
+      <strong>Cache:</strong> <%= @crew.cache_enabled ? "Enabled" : "Disabled" %>
+    </div>
+    <div class="meta-item">
+      <strong>Status:</strong> <%= @crew.active ? "Active" : "Inactive" %>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Agents (<%= @agents.count %>)</h2>
+  <div class="agents-list">
+    <% @agents.each do |agent| %>
+      <div class="agent-item">
+        <h4><%= agent.name %></h4>
+        <p><strong>Role:</strong> <%= agent.role %></p>
+        <p><strong>Goal:</strong> <%= agent.goal %></p>
+        <% if agent.tools.present? %>
+          <p><strong>Tools:</strong> <%= agent.tools.count %> configured</p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Tasks (<%= @tasks.count %>)</h2>
+  <div class="tasks-list">
+    <% @tasks.each do |task| %>
+      <div class="task-item">
+        <h4>Task #<%= task.position || task.id %></h4>
+        <p><%= task.description %></p>
+        <p><strong>Expected Output:</strong> <%= task.expected_output %></p>
+        <% if task.agents.any? %>
+          <p><strong>Assigned to:</strong> <%= task.agents.map(&:name).join(", ") %></p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Recent Executions</h2>
+  <% if @recent_executions.any? %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Duration</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @recent_executions.each do |execution| %>
+          <tr>
+            <td><%= link_to "##{execution.id}", execution %></td>
+            <td>
+              <span class="badge badge-<%= execution.status %>">
+                <%= execution.status %>
+              </span>
+            </td>
+            <td><%= execution.started_at&.strftime("%Y-%m-%d %H:%M") %></td>
+            <td><%= execution.duration_seconds ? "#{execution.duration_seconds}s" : "-" %></td>
+            <td>
+              <%= link_to "View", execution, class: "btn btn-sm" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p>No executions yet.</p>
+  <% end %>
+</div>

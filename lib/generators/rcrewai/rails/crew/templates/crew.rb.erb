@@ -1,0 +1,72 @@
+class <%= class_name %>Crew
+  include RcrewAI::Rails::CrewBuilder
+
+  def initialize
+    @crew = RcrewAI::Rails::Crew.create!(
+      name: "<%= file_name %>",
+      description: "<%= crew_description %>",
+      process_type: "<%= process_type %>",
+      verbose: true,
+      memory_enabled: false,
+      cache_enabled: true
+    )
+
+    setup_agents
+    setup_tasks
+  end
+
+  def execute(inputs = {})
+    # Execute asynchronously via ActiveJob
+    @crew.execute_async(inputs)
+    
+    # Or execute synchronously:
+    # @crew.execute_sync(inputs)
+  end
+
+  private
+
+  def setup_agents
+    # Define your agents here
+    # Example:
+    # @researcher = @crew.agents.create!(
+    #   name: "researcher",
+    #   role: "Senior Research Analyst",
+    #   goal: "Uncover cutting-edge developments in AI and data science",
+    #   backstory: "You are an expert researcher with years of experience",
+    #   verbose: true,
+    #   allow_delegation: false
+    # )
+    <% options[:agents].each do |agent_name| %>
+    
+    @<%= agent_name.underscore %> = @crew.agents.create!(
+      name: "<%= agent_name.underscore %>",
+      role: "<%= agent_name.humanize %> Agent",
+      goal: "Perform <%= agent_name.humanize.downcase %> tasks",
+      backstory: "You are an expert <%= agent_name.humanize.downcase %> agent",
+      verbose: true,
+      allow_delegation: false
+    )
+    <% end %>
+  end
+
+  def setup_tasks
+    # Define your tasks here
+    # Example:
+    # @research_task = @crew.tasks.create!(
+    #   description: "Research the latest AI trends",
+    #   expected_output: "A comprehensive report on AI trends",
+    #   position: 1
+    # )
+    # @research_task.agents << @researcher
+    
+    # Task dependencies can be set like:
+    # @analysis_task.add_dependency(@research_task)
+  end
+
+  # Add any helper methods here
+  
+  # Example callback for task completion:
+  # def task_completed(output)
+  #   Rails.logger.info "Task completed with output: #{output}"
+  # end
+end

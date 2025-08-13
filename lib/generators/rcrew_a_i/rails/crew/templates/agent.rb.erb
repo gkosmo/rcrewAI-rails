@@ -1,0 +1,45 @@
+class <%= @agent_name.camelize %>Agent
+  include RcrewAI::Rails::AgentBuilder
+
+  def initialize
+    @agent = RcrewAI::Agent.new(
+      role: role,
+      goal: goal,
+      backstory: backstory,
+      memory: true,
+      verbose: true,
+      allow_delegation: false,
+      tools: tools,
+      max_iter: 25,
+      max_rpm: 10
+    )
+  end
+
+  def role
+    "<%= @agent_name.humanize %> Specialist"
+  end
+
+  def goal
+    "Perform <%= @agent_name.humanize.downcase %> tasks efficiently and accurately"
+  end
+
+  def backstory
+    <<~BACKSTORY
+      You are a highly skilled <%= @agent_name.humanize.downcase %> specialist with extensive experience.
+      Your expertise allows you to handle complex <%= @agent_name.humanize.downcase %> challenges effectively.
+    BACKSTORY
+  end
+
+  def tools
+    [
+      # Add your tools here
+      # RcrewAI::Tools::WebSearch.new,
+      # RcrewAI::Tools::FileReader.new,
+      # CustomTool.new
+    ]
+  end
+
+  def to_agent
+    @agent
+  end
+end
