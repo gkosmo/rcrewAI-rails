@@ -1,6 +1,6 @@
 # RcrewAI Rails
 
-Rails engine for integrating RcrewAI into your Rails applications. Provides ActiveRecord persistence, background job integration, generators, and a web UI for managing AI crews and agents.
+Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewai-rails) into your Rails applications. Provides ActiveRecord persistence, background job integration, generators, and a web UI for managing AI crews and agents.
 
 ## Features
 
