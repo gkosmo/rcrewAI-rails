@@ -37,7 +37,6 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
-    add_index :rcrewai_agents, :crew_id
     add_index :rcrewai_agents, :name
 
     create_table :rcrewai_tasks do |t|
@@ -57,7 +56,6 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
-    add_index :rcrewai_tasks, :crew_id
     add_index :rcrewai_tasks, :position
 
     create_table :rcrewai_task_assignments do |t|
@@ -92,7 +90,6 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
-    add_index :rcrewai_executions, :crew_id
     add_index :rcrewai_executions, :status
     add_index :rcrewai_executions, :created_at
 
@@ -106,7 +103,6 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
-    add_index :rcrewai_execution_logs, :execution_id
     add_index :rcrewai_execution_logs, :level
     add_index :rcrewai_execution_logs, :timestamp
   end
