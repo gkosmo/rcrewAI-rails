@@ -35,7 +35,20 @@ $ rails db:migrate
 This will:
 - Create the necessary database migrations
 - Add an initializer file for configuration
-- Mount the engine routes
+- Mount the engine routes in `config/routes.rb`
+
+### Manual Routes Setup
+
+If you need to mount the routes manually, add this to your `config/routes.rb`:
+
+```ruby
+Rails.application.routes.draw do
+  mount RcrewAI::Rails::Engine => '/rcrewai'
+  # Your other routes...
+end
+```
+
+This makes the web UI available at `/rcrewai` and API endpoints at `/rcrewai/api/v1/`.
 
 ## Configuration
 
