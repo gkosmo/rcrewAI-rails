@@ -28,7 +28,7 @@ $ bundle install
 Run the installation generator:
 
 ```bash
-$ rails generate rcrewai:rails:install
+$ rails generate rcrew_a_i:rails:install
 $ rails db:migrate
 ```
 

@@ -28,4 +28,13 @@ module RcrewAI
       end
     end
   end
+
+  # Delegate configure to Rails module for convenience
+  def self.configure(&block)
+    Rails.configure(&block)
+  end
+
+  def self.config
+    Rails.config
+  end
 end
