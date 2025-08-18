@@ -14,7 +14,7 @@ module RcrewAI
         end
 
         def create_migration_file
-          migration_template "create_rcrewai_tables.rb", "db/migrate/create_rcrewai_tables.rb"
+          migration_template "create_rcrewai_tables.rb", "db/migrate/create_rcrewai_tables.rb", migration_class_name: "CreateRcrewaiTables"
         end
 
         def create_initializer
