@@ -2,29 +2,31 @@ module RcrewAI
   module Rails
     module Tools
       class RailsCacheTool < RCrewAI::Tools::Base
-        def initialize
-          super(
-            name: "Rails Cache Tool",
-            description: "Read and write to Rails cache"
-          )
-        end
+        tool_name "rails_cache"
+        description "Read from and write to the Rails cache. Supports read, write, delete, exist?, fetch, and clear."
 
-        def execute(action, key, value = nil, options = {})
-          case action.to_sym
-          when :read
-            read_cache(key)
-          when :write
-            write_cache(key, value, options)
-          when :delete
-            delete_cache(key)
-          when :exist?
-            cache_exists?(key)
-          when :fetch
-            fetch_cache(key, options) { value }
-          when :clear
-            clear_cache
-          else
-            { error: "Unknown action: #{action}" }
+        param :action, type: :enum, required: true,
+              values: %w[read write delete exist? fetch clear],
+              description: "Cache action to perform."
+        param :key, type: :string, required: false,
+              description: "Cache key. Required for every action except clear."
+        param :value, type: :string, required: false,
+              description: "Value to store (used by write and fetch fallback)."
+        param :options, type: :object, required: false,
+              description: "Cache options hash (e.g. expires_in)."
+
+        def execute(action:, key: nil, value: nil, options: {})
+          act = action.to_sym
+          opts = (options || {}).transform_keys(&:to_sym)
+
+          case act
+          when :read    then read_cache(key)
+          when :write   then write_cache(key, value, opts)
+          when :delete  then delete_cache(key)
+          when :exist?  then cache_exists?(key)
+          when :fetch   then fetch_cache(key, value, opts)
+          when :clear   then clear_cache
+          else { error: "Unknown action: #{action}" }
           end
         rescue => e
           { error: "Cache operation failed", message: e.message }
@@ -37,7 +39,7 @@ module RcrewAI
           { key: key, value: value, exists: !value.nil? }
         end
 
-        def write_cache(key, value, options = {})
+        def write_cache(key, value, options)
           success = ::Rails.cache.write(key, value, options)
           { key: key, written: success }
         end
@@ -48,14 +50,11 @@ module RcrewAI
         end
 
         def cache_exists?(key)
-          exists = ::Rails.cache.exist?(key)
-          { key: key, exists: exists }
+          { key: key, exists: ::Rails.cache.exist?(key) }
         end
 
-        def fetch_cache(key, options = {})
-          value = ::Rails.cache.fetch(key, options) do
-            yield if block_given?
-          end
+        def fetch_cache(key, fallback, options)
+          value = ::Rails.cache.fetch(key, options) { fallback }
           { key: key, value: value }
         end
 

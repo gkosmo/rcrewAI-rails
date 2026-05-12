@@ -26,8 +26,10 @@ module RcrewAI
       end
 
       initializer "rcrewai_rails.assets" do |app|
-        app.config.assets.paths << root.join("app/assets/stylesheets")
-        app.config.assets.paths << root.join("app/assets/javascripts")
+        if app.config.respond_to?(:assets)
+          app.config.assets.paths << root.join("app/assets/stylesheets")
+          app.config.assets.paths << root.join("app/assets/javascripts")
+        end
       end
 
 

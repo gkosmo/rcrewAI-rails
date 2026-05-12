@@ -18,14 +18,9 @@ module RcrewAI
 
       def to_rcrew
         crew = RCrewAI::Crew.new(
-          name: name,
-          description: description,
+          name,
           process: process_type.to_sym,
-          verbose: verbose,
-          memory: memory_enabled,
-          cache: cache_enabled,
-          max_rpm: max_rpm,
-          manager_llm: manager_llm
+          verbose: verbose
         )
 
         agents.each do |agent|
