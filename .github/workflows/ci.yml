@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    name: RSpec (Ruby ${{ matrix.ruby }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.1", "3.2", "3.3"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # rcrewai 0.3 is not yet published. Check out the sibling repo so the
+      # path: "../rcrewAI" dep in our Gemfile resolves. After 0.3.0 ships,
+      # the gemspec dep (`rcrewai ~> 0.3`) will resolve from rubygems and
+      # this step can be dropped.
+      - name: Check out rcrewAI (sibling repo)
+        uses: actions/checkout@v4
+        with:
+          repository: gkosmo/rcrewAI
+          ref: gkosmo/finish-plan
+          path: rcrewAI-checkout
+
+      - name: Place rcrewAI alongside this repo
+        run: mv rcrewAI-checkout ../rcrewAI
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Run RSpec
+        run: bundle exec rspec

@@ -62,7 +62,6 @@ module RcrewAI
       def initialize(attributes = {})
         @attributes = attributes
         @agent = build_agent
-        setup_tools
         configure_agent
       end
 
@@ -78,20 +77,19 @@ module RcrewAI
 
       def build_agent
         RCrewAI::Agent.new(
+          name: @attributes[:name] || default_agent_name,
           role: @attributes[:role] || self.class.agent_role,
           goal: @attributes[:goal] || self.class.agent_goal,
           backstory: @attributes[:backstory] || self.class.agent_backstory,
-          memory: @attributes[:memory] || self.class.memory_enabled,
+          tools: instantiate_tools,
           verbose: verbose?,
           allow_delegation: @attributes[:allow_delegation] || self.class.allow_delegation,
-          max_iter: @attributes[:max_iterations] || self.class.max_iterations,
-          llm: @attributes[:llm_config] || self.class.llm_config
+          max_iterations: @attributes[:max_iterations] || self.class.max_iterations
         )
       end
 
-      def setup_tools
-        tools = instantiate_tools
-        @agent.tools = tools if tools.any?
+      def default_agent_name
+        self.class.name.to_s.split("::").last&.underscore.presence || "agent"
       end
 
       def instantiate_tools

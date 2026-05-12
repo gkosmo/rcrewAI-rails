@@ -1,8 +1,6 @@
 module RcrewAI
   module Rails
-    VERSION = "0.2.8"
-    
-    # Also define Version for Zeitwerk compatibility
+    VERSION = "0.3.0"
     Version = VERSION
   end
 end
