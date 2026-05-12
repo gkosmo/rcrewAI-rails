@@ -17,17 +17,25 @@ module RcrewAI
           rcrew_task = task.to_rcrew_task
           rcrew_agent = agent.to_rcrew_agent
 
-          # Execute the task
-          result = rcrew_agent.execute_task(rcrew_task, context: inputs)
+          # Execute the task. Agent#execute_task returns a hash:
+          #   { content:, tool_calls_history:, usage:, iterations:, finish_reason: }
+          # `inputs` is recorded by the caller and made available as task context
+          # via the Task#context column; the gem does not accept it as a kwarg.
+          result = rcrew_agent.execute_task(rcrew_task)
+          content = result.is_a?(Hash) ? result[:content].to_s : result.to_s
 
           execution_log[:completed_at] = Time.current
           execution_log[:status] = "completed"
-          execution_log[:result] = result
+          execution_log[:result] = content
+          if result.is_a?(Hash)
+            execution_log[:usage] = result[:usage]
+            execution_log[:tool_calls] = result[:tool_calls_history]
+            execution_log[:iterations] = result[:iterations]
+            execution_log[:finish_reason] = result[:finish_reason]
+          end
 
           # Save result if configured
-          if task.output_file.present?
-            save_output_to_file(task.output_file, result)
-          end
+          save_output_to_file(task.output_file, content) if task.output_file.present?
 
           # Log success
           ::Rails.logger.info "Task #{task.id} completed successfully by agent #{agent.id}"

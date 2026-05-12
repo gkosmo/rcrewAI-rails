@@ -20,14 +20,12 @@ module RcrewAI
 
       def to_rcrew_task
         RCrewAI::Task.new(
+          name: rcrew_task_name,
           description: description,
           expected_output: expected_output,
           agent: agent&.to_rcrew_agent,
           context: context,
-          async_execution: async_execution,
-          output_json: output_json,
-          output_pydantic: output_pydantic,
-          output_file: output_file,
+          async: async_execution,
           tools: instantiated_tools,
           callback: callback_method
         )
@@ -53,6 +51,13 @@ module RcrewAI
       end
 
       private
+
+      def rcrew_task_name
+        return "task_#{id}" if id
+        return description.to_s.parameterize.first(40).presence || "task" if description.present?
+
+        "task"
+      end
 
       def callback_method
         return nil unless callback_class.present? && callback_method_name.present?

@@ -45,7 +45,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Core dependency
-  spec.add_dependency "rcrewai", "~> 0.2"
+  spec.add_dependency "rcrewai", "~> 0.3"
   
   # Rails dependencies
   spec.add_dependency "rails", ">= 7.0.0"

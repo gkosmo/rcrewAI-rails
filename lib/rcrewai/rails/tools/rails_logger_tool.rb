@@ -2,40 +2,41 @@ module RcrewAI
   module Rails
     module Tools
       class RailsLoggerTool < RCrewAI::Tools::Base
+        tool_name "rails_logger"
+        description "Log a message to the Rails logger at the given level and emit an ActiveSupport notification."
+
+        param :level, type: :enum, required: true,
+              values: %w[debug info warn error fatal],
+              description: "Log level."
+        param :message, type: :string, required: true,
+              description: "Message to log."
+        param :metadata, type: :object, required: false,
+              description: "Additional metadata appended as JSON to the log line."
+
         def initialize(tag: "RcrewAI")
+          super()
           @tag = tag
-          super(
-            name: "Rails Logger Tool",
-            description: "Log messages to Rails logger"
-          )
         end
 
-        def execute(level, message, metadata = {})
+        def execute(level:, message:, metadata: {})
           logger = ::Rails.logger
-          
-          # Format the message with metadata
-          formatted_message = format_message(message, metadata)
-          
+          meta = metadata || {}
+          formatted_message = format_message(message, meta)
+
           case level.to_sym
-          when :debug
-            logger.debug(formatted_message)
-          when :info
-            logger.info(formatted_message)
-          when :warn
-            logger.warn(formatted_message)
-          when :error
-            logger.error(formatted_message)
-          when :fatal
-            logger.fatal(formatted_message)
+          when :debug then logger.debug(formatted_message)
+          when :info  then logger.info(formatted_message)
+          when :warn  then logger.warn(formatted_message)
+          when :error then logger.error(formatted_message)
+          when :fatal then logger.fatal(formatted_message)
           else
             return { error: "Unknown log level: #{level}" }
           end
 
-          # Also instrument for monitoring
           ActiveSupport::Notifications.instrument("log.rcrewai", {
             level: level,
             message: message,
-            metadata: metadata,
+            metadata: meta,
             tag: @tag
           })
 
@@ -48,7 +49,7 @@ module RcrewAI
 
         def format_message(message, metadata)
           return "[#{@tag}] #{message}" if metadata.empty?
-          
+
           "[#{@tag}] #{message} | #{metadata.to_json}"
         end
       end

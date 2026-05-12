@@ -17,16 +17,14 @@ module RcrewAI
 
       def to_rcrew_agent
         RCrewAI::Agent.new(
+          name: name,
           role: role,
           goal: goal,
           backstory: backstory,
-          memory: memory_enabled,
           verbose: verbose,
           allow_delegation: allow_delegation,
           tools: instantiated_tools,
-          max_iter: max_iterations,
-          max_rpm: max_rpm,
-          llm: llm_config
+          max_iterations: max_iterations
         )
       end
 
