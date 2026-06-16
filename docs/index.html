@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RcrewAI Rails — AI agent crews for Rails</title>
+<meta name="description" content="Rails engine for building AI agent crews with ActiveRecord persistence, background jobs, generators, and a web dashboard.">
+<style>
+  :root {
+    --crimson: #c4221f;
+    --crimson-dark: #9c1714;
+    --ink: #1a1a1a;
+    --muted: #5c5c64;
+    --line: #e5e3df;
+    --bg: #fbfaf8;
+    --card: #ffffff;
+    --code-bg: #1f1d24;
+    --code-fg: #e8e6f0;
+    --code-line: #2e2b36;
+    --radius: 10px;
+    --maxw: 960px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--crimson); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(251,250,248,0.92);
+    backdrop-filter: saturate(180%) blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav {
+    display: flex; align-items: center; gap: 20px;
+    height: 60px;
+  }
+  .brand { font-weight: 700; font-size: 18px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .brand .dot { width: 12px; height: 12px; border-radius: 3px; background: var(--crimson); display: inline-block; }
+  .nav-links { display: flex; gap: 20px; margin-left: auto; align-items: center; }
+  .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; }
+  .nav-links a:hover { color: var(--ink); text-decoration: none; }
+  .nav-links .gh { color: var(--ink); font-weight: 600; }
+  @media (max-width: 720px) { .nav-links a:not(.gh) { display: none; } }
+
+  /* Hero */
+  .hero { padding: 72px 0 56px; text-align: center; border-bottom: 1px solid var(--line); }
+  .hero h1 { font-size: 44px; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.02em; }
+  .hero h1 .accent { color: var(--crimson); }
+  .hero p.lead { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
+  .install-line {
+    display: inline-block; font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: var(--code-bg); color: var(--code-fg);
+    padding: 12px 18px; border-radius: var(--radius); font-size: 15px;
+    margin-bottom: 28px;
+  }
+  .install-line .prompt { color: #8a86a0; user-select: none; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 11px 22px; border-radius: var(--radius);
+    font-weight: 600; font-size: 15px; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--crimson); color: #fff; }
+  .btn-primary:hover { background: var(--crimson-dark); text-decoration: none; }
+  .btn-secondary { background: var(--card); color: var(--ink); border-color: var(--line); }
+  .btn-secondary:hover { border-color: var(--muted); text-decoration: none; }
+
+  /* Sections */
+  section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section h2 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  section .sub { color: var(--muted); margin: 0 0 28px; font-size: 16px; }
+  h3 { font-size: 18px; margin: 32px 0 10px; }
+  h3:first-of-type { margin-top: 0; }
+
+  /* Feature grid */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .feature {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 22px;
+  }
+  .feature h3 { margin: 0 0 6px; font-size: 16px; }
+  .feature p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .feature .ic { font-size: 22px; display: block; margin-bottom: 10px; }
+
+  /* Code */
+  pre {
+    background: var(--code-bg); color: var(--code-fg);
+    border: 1px solid var(--code-line); border-radius: var(--radius);
+    padding: 18px 20px; overflow-x: auto; font-size: 14px; line-height: 1.55;
+    font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    margin: 0 0 16px;
+  }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  p code, li code, td code {
+    background: #efece6; color: var(--crimson-dark);
+    padding: 2px 6px; border-radius: 5px; font-size: 13.5px;
+  }
+  .caption { font-size: 13px; color: var(--muted); margin: -8px 0 22px; }
+
+  /* Lists */
+  ul.clean { padding-left: 20px; }
+  ul.clean li { margin-bottom: 6px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.method { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  .verb { display: inline-block; min-width: 46px; font-weight: 700; }
+  .verb.get { color: #1f7a3d; }
+  .verb.post { color: var(--crimson); }
+
+  /* Footer */
+  footer { padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; }
+  footer a { color: var(--muted); text-decoration: underline; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <span class="brand"><span class="dot"></span>RcrewAI&nbsp;Rails</span>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#usage">Usage</a>
+      <a href="#tools">Tools</a>
+      <a href="#api">API</a>
+      <a class="gh" href="https://github.com/gkosmo/rcrewai-rails">GitHub →</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="border-top:none;">
+  <div class="wrap">
+    <h1>Build AI agent crews,<br><span class="accent">the Rails way.</span></h1>
+    <p class="lead">
+      A Rails engine for orchestrating AI agents — with ActiveRecord persistence,
+      background-job execution, generators, and a built-in web dashboard.
+    </p>
+    <div class="install-line"><span class="prompt">gem </span>'rcrewai-rails'</div>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/gkosmo/rcrewai-rails">View on GitHub</a>
+      <a class="btn btn-secondary" href="https://rubygems.org/gems/rcrewai-rails">RubyGems</a>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Features</h2>
+    <p class="sub">Everything you need to run collaborative AI crews inside a Rails app.</p>
+    <div class="grid">
+      <div class="feature">
+        <span class="ic">🗄️</span>
+        <h3>ActiveRecord Integration</h3>
+        <p>Persist crews, agents, tasks, and executions directly in your database.</p>
+      </div>
+      <div class="feature">
+        <span class="ic">⚙️</span>
+        <h3>Background Jobs</h3>
+        <p>Runs through ActiveJob — works with Sidekiq, Resque, Delayed Job, or any adapter.</p>
+      </div>
+      <div class="feature">
+        <span class="ic">🏗️</span>
+        <h3>Rails Generators</h3>
+        <p>Scaffold new crews and agents from the command line in seconds.</p>
+      </div>
+      <div class="feature">
+        <span class="ic">📊</span>
+        <h3>Web Dashboard</h3>
+        <p>Monitor executions, view logs, and manage crews through a built-in UI.</p>
+      </div>
+      <div class="feature">
+        <span class="ic">🤖</span>
+        <h3>Multi-LLM Support</h3>
+        <p>OpenAI GPT, Anthropic Claude, Google Gemini, Azure OpenAI, and Ollama.</p>
+      </div>
+      <div class="feature">
+        <span class="ic">🧰</span>
+        <h3>Rails-Specific Tools</h3>
+        <p>Pre-built tools for ActiveRecord, ActionMailer, the Rails cache, and more.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <h2>Installation</h2>
+    <p class="sub">Add the gem, run the installer, and migrate.</p>
+
+    <h3>1. Add to your Gemfile</h3>
+<pre>gem 'rcrewai-rails'</pre>
+<pre>$ bundle install</pre>
+
+    <h3>2. Run the install generator</h3>
+<pre>$ rails generate rcrew_a_i:rails:install
+$ rails db:migrate</pre>
+    <p class="caption">This creates the database migrations, adds a configuration initializer, and mounts the engine routes.</p>
+
+    <h3>Manual route setup</h3>
+    <p>If you prefer to mount the engine yourself, add this to <code>config/routes.rb</code>:</p>
+<pre>Rails.application.routes.draw do
+  mount RcrewAI::Rails::Engine => '/rcrewai'
+  # Your other routes...
+end</pre>
+    <p class="caption">The web UI is then available at <code>/rcrewai</code> and the API at <code>/rcrewai/api/v1/</code>.</p>
+  </div>
+</section>
+
+<section id="config">
+  <div class="wrap">
+    <h2>Configuration</h2>
+    <p class="sub">Configure the engine and the underlying RcrewAI gem in an initializer.</p>
+<pre>RcrewAI::Rails.configure do |config|
+  # ActiveJob queue for background processing
+  config.job_queue_name = "default"
+
+  # Enable/disable web UI
+  config.enable_web_ui = true
+
+  # Use async execution by default
+  config.async_execution = true
+
+  # Default LLM settings
+  config.default_llm_provider = "openai"
+  config.default_llm_model = "gpt-4"
+
+  # Logging
+  config.enable_logging = true
+  config.log_level = :info
+end
+
+# Configure the base RcrewAI gem
+RcrewAI.configure do |config|
+  config.openai_api_key = ENV["OPENAI_API_KEY"]
+  # Add other LLM provider keys as needed
+end</pre>
+  </div>
+</section>
+
+<section id="usage">
+  <div class="wrap">
+    <h2>Usage</h2>
+    <p class="sub">Generate a crew, or define one programmatically.</p>
+
+    <h3>Generate a crew</h3>
+<pre>$ rails generate rcrewai:rails:crew research_team sequential \
+    --agents researcher analyst writer \
+    --description "Research team for market analysis"</pre>
+    <p class="caption">Creates a crew class in <code>app/crews/research_team_crew.rb</code>.</p>
+
+    <h3>Define a crew programmatically</h3>
+<pre>class ResearchCrew
+  include RcrewAI::Rails::CrewBuilder
+
+  crew_name "research_team"
+  crew_description "AI-powered research team"
+  process_type :sequential
+  memory_enabled true
+
+  def setup_agents
+    @researcher = create_agent("researcher",
+      role: "Senior Research Analyst",
+      goal: "Uncover insights and trends",
+      backstory: "Expert researcher with years of experience"
+    )
+
+    @writer = create_agent("writer",
+      role: "Content Writer",
+      goal: "Create compelling reports",
+      backstory: "Skilled writer specializing in technical content"
+    )
+  end
+
+  def setup_tasks
+    @research_task = create_task("Research latest AI trends",
+      expected_output: "Comprehensive research report",
+      position: 1
+    )
+    assign_agent_to_task(@researcher, @research_task)
+
+    @writing_task = create_task("Write executive summary",
+      expected_output: "2-page executive summary",
+      position: 2
+    )
+    assign_agent_to_task(@writer, @writing_task)
+    add_task_dependency(@writing_task, @research_task)
+  end
+end
+
+# Execute the crew
+crew = ResearchCrew.new
+execution = crew.execute(topic: "AI in Healthcare")</pre>
+
+    <h3>Running executions</h3>
+    <p>Executions run through ActiveJob by default, using whatever adapter your app is configured with:</p>
+<pre># Async execution (default)
+crew.execute_async(inputs)
+
+# Sync execution
+crew.execute_sync(inputs)
+
+# Custom job options
+CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)</pre>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="wrap">
+    <h2>Rails Tools</h2>
+    <p class="sub">Give your agents safe, scoped access to your Rails app.</p>
+    <p>Bundled tools include <code>ActiveRecordTool</code>, <code>ActionMailerTool</code>,
+       <code>RailsCacheTool</code>, <code>ActiveStorageTool</code>, and <code>RailsLoggerTool</code> —
+       each with allow-lists so agents only touch what you permit.</p>
+<pre>class DataAnalystAgent
+  include RcrewAI::Rails::AgentBuilder
+
+  agent_role "Data Analyst"
+  agent_goal "Analyze application data"
+
+  tools [
+    RcrewAI::Rails::Tools::ActiveRecordTool.new(
+      model_class: User,
+      allowed_methods: [:count, :where, :pluck]
+    ),
+    RcrewAI::Rails::Tools::RailsCacheTool.new,
+    RcrewAI::Rails::Tools::ActionMailerTool.new(
+      mailer_class: ReportMailer,
+      allowed_methods: [:send_report]
+    )
+  ]
+end</pre>
+  </div>
+</section>
+
+<section id="dashboard">
+  <div class="wrap">
+    <div class="two-col">
+      <div>
+        <h2>Web Dashboard</h2>
+        <p class="sub">Mounted at <code>/rcrewai</code>.</p>
+        <ul class="clean">
+          <li>View all crews and their configurations</li>
+          <li>Monitor execution status and logs</li>
+          <li>Start new executions</li>
+          <li>Browse execution history and results</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Models</h2>
+        <p class="sub">Persisted as ActiveRecord.</p>
+        <ul class="clean">
+          <li><code>RcrewAI::Rails::Crew</code></li>
+          <li><code>RcrewAI::Rails::Agent</code></li>
+          <li><code>RcrewAI::Rails::Task</code></li>
+          <li><code>RcrewAI::Rails::Execution</code></li>
+          <li><code>RcrewAI::Rails::ExecutionLog</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="api">
+  <div class="wrap">
+    <h2>API Endpoints</h2>
+    <p class="sub">JSON API served under <code>/rcrewai/api/v1/</code>.</p>
+    <table>
+      <thead><tr><th style="width:90px;">Method</th><th>Path</th></tr></thead>
+      <tbody>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/crews</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/crews/:id</td></tr>
+        <tr><td><span class="verb post">POST</span></td><td class="method">/crews/:id/execute</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id/status</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id/logs</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      <a href="https://github.com/gkosmo/rcrewai-rails">GitHub</a> ·
+      <a href="https://rubygems.org/gems/rcrewai-rails">RubyGems</a> ·
+      <a href="https://github.com/gkosmo/rcrewai-rails/issues">Issues</a>
+    </p>
+    <p>Released under the MIT License.</p>
+  </div>
+</footer>
+
+</body>
+</html>

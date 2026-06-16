@@ -28,6 +28,11 @@ module RcrewAI
         #{config.root}/app
       ]
 
+      # Tell Zeitwerk to ignore generator files - they aren't meant to be autoloaded
+      initializer "rcrewai_rails.zeitwerk" do |app|
+        ::Rails.autoloaders.main.ignore("#{root}/lib/generators")
+      end
+
       config.generators do |g|
         g.test_framework :rspec
         g.fixture_replacement :factory_bot
