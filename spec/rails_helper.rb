@@ -7,7 +7,7 @@ Combustion.path = "spec/internal"
 Combustion.initialize! :active_record, :action_controller, :active_job,
                        database_migrate: false do
   config.load_defaults 7.0
-  config.eager_load = false
+  config.eager_load = true
   config.logger = Logger.new(File::NULL)
 end
 

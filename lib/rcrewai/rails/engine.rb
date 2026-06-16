@@ -9,14 +9,23 @@ module RcrewAI
         inflect.acronym 'RcrewAI'
       end
       
+      # Note: `lib/` is intentionally NOT on autoload/eager_load paths.
+      # Everything under lib/rcrewai/rails/ is loaded explicitly via
+      # `require_relative` in lib/rcrewai/rails.rb, and lib/generators/
+      # contains Rails generators which Rails loads on demand. Putting
+      # lib/ on Zeitwerk's eager_load_paths makes boot fail under
+      # `config.eager_load = true` because:
+      #   - lib/rcrewai/rails/version.rb defines VERSION (uppercase),
+      #     but Zeitwerk expects `Version` from the filename.
+      #   - lib/generators/ files define constants like
+      #     RcrewAI::Rails::Generators::CrewGenerator rather than the
+      #     path-derived Generators::RcrewAI::Rails::Crew::CrewGenerator.
       config.autoload_paths += %W[
         #{config.root}/app
-        #{config.root}/lib
       ]
-      
+
       config.eager_load_paths += %W[
         #{config.root}/app
-        #{config.root}/lib
       ]
 
       # Tell Zeitwerk to ignore generator files - they aren't meant to be autoloaded
