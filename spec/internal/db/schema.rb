@@ -32,6 +32,9 @@ ActiveRecord::Schema.define(version: 1) do
     t.text :tools
     t.integer :max_iterations, default: 25
     t.integer :max_rpm
+    t.boolean :reasoning, default: false, null: false
+    t.integer :max_reasoning_attempts, default: 3
+    t.boolean :respect_context_window, default: false, null: false
     t.text :llm_config
     t.boolean :active, default: true
     t.timestamps
