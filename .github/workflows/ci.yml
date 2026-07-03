@@ -17,15 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # rcrewai 0.3 is not yet published. Check out the sibling repo so the
-      # path: "../rcrewAI" dep in our Gemfile resolves. After 0.3.0 ships,
-      # the gemspec dep (`rcrewai ~> 0.3`) will resolve from rubygems and
-      # this step can be dropped.
+      # rcrewai is not yet published to rubygems. Check out the sibling repo so
+      # the path: "../rcrewAI" dep in our Gemfile resolves. Pinned to the v0.5.0
+      # tag to satisfy the gemspec dep (`rcrewai ~> 0.5`). Once rcrewai ships to
+      # rubygems, the gemspec dep will resolve from there and this step can be
+      # dropped.
       - name: Check out rcrewAI (sibling repo)
         uses: actions/checkout@v4
         with:
           repository: gkosmo/rcrewAI
-          ref: gkosmo/finish-plan
+          ref: v0.5.0
           path: rcrewAI-checkout
 
       - name: Place rcrewAI alongside this repo
