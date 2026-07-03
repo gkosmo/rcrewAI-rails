@@ -59,6 +59,18 @@ RSpec.describe RcrewAI::Rails::Agent, type: :model do
       expect(agent.rate_limiter).not_to be_nil
     end
 
+    it "does not forward max_rpm when it is zero" do
+      captured = nil
+      allow(RCrewAI::Agent).to receive(:new).and_wrap_original do |orig, **kwargs|
+        captured = kwargs
+        orig.call(**kwargs)
+      end
+
+      build_agent(max_rpm: 0).to_rcrew_agent
+
+      expect(captured).not_to have_key(:max_rpm)
+    end
+
     it "forwards reasoning and max_reasoning_attempts when reasoning is on" do
       captured = nil
       allow(RCrewAI::Agent).to receive(:new).and_wrap_original do |orig, **kwargs|

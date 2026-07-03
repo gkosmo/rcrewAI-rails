@@ -33,7 +33,7 @@ module RcrewAI
       # set, so an all-default record constructs exactly as it did pre-0.5.
       def agent_options
         opts = {}
-        opts[:max_rpm] = max_rpm if max_rpm.present?
+        opts[:max_rpm] = max_rpm if max_rpm.present? && max_rpm.positive?
         opts[:reasoning] = reasoning if reasoning
         opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
         opts[:respect_context_window] = respect_context_window if respect_context_window
