@@ -24,8 +24,21 @@ module RcrewAI
           verbose: verbose,
           allow_delegation: allow_delegation,
           tools: instantiated_tools,
-          max_iterations: max_iterations
+          max_iterations: max_iterations,
+          **agent_options
         )
+      end
+
+      # rcrewai 0.5.0 agent options. Only emit a key when it is meaningfully
+      # set, so an all-default record constructs exactly as it did pre-0.5.
+      def agent_options
+        opts = {}
+        opts[:max_rpm] = max_rpm if max_rpm.present?
+        opts[:reasoning] = reasoning if reasoning
+        opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
+        opts[:respect_context_window] = respect_context_window if respect_context_window
+        opts[:llm] = llm_config.symbolize_keys if llm_config.present?
+        opts
       end
 
       def instantiated_tools
