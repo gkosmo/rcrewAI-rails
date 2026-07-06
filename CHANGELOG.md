@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `planning` / `planning_llm`, and `before_kickoff` / `after_kickoff` lifecycle
   hooks (resolved from `*_class` + `*_method` columns). Options are emitted and
   hooks registered only when configured, so existing crews build unchanged (#9).
+- Batch crew execution (`kickoff_for_each` parity): `Crew#execute_batch_sync` /
+  `#execute_batch_async` run the crew once per input set, creating one `Execution`
+  per input grouped by a shared `batch_id` (new nullable column). `#batch_executions`
+  returns a batch's runs in order. Existing single-run executions are unaffected (#10).
 
 ### Changed
 - Require `rcrewai ~> 0.5` (was `~> 0.3`) (#6).
