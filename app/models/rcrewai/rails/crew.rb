@@ -6,6 +6,7 @@ module RcrewAI
       has_many :agents, dependent: :destroy
       has_many :tasks, dependent: :destroy
       has_many :executions, dependent: :destroy
+      has_many :knowledge_sources, as: :owner, class_name: "RcrewAI::Rails::KnowledgeSource", dependent: :destroy
 
       validates :name, presence: true
       validates :process_type, inclusion: { in: %w[sequential hierarchical] }
@@ -42,7 +43,13 @@ module RcrewAI
         opts = {}
         opts[:planning] = planning if planning
         opts[:planning_llm] = planning_llm.to_sym if planning_llm.present?
+        sources = rcrew_knowledge_sources
+        opts[:knowledge_sources] = sources if sources.any?
         opts
+      end
+
+      def rcrew_knowledge_sources
+        knowledge_sources.active.map(&:to_rcrew_source)
       end
 
       def execute_async(inputs = {})

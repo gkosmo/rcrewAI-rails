@@ -6,6 +6,7 @@ module RcrewAI
       belongs_to :crew
       has_many :tasks, dependent: :nullify
       has_many :tools, class_name: 'RcrewAI::Rails::Tool', dependent: :destroy
+      has_many :knowledge_sources, as: :owner, class_name: "RcrewAI::Rails::KnowledgeSource", dependent: :destroy
 
       validates :name, presence: true
       validates :role, presence: true
@@ -38,7 +39,13 @@ module RcrewAI
         opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
         opts[:respect_context_window] = respect_context_window if respect_context_window
         opts[:llm] = llm_config.symbolize_keys if llm_config.present?
+        sources = rcrew_knowledge_sources
+        opts[:knowledge_sources] = sources if sources.any?
         opts
+      end
+
+      def rcrew_knowledge_sources
+        knowledge_sources.active.map(&:to_rcrew_source)
       end
 
       def instantiated_tools
