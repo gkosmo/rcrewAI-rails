@@ -22,6 +22,21 @@ than being pure builder concerns. C2 handles batch execution. Decisions taken
   and returns scores. Both fit a CLI/rake context better than a web/background-job
   engine. Revisit separately if wanted.
 
+## CrewAI parity
+
+Verified against CrewAI's own docs (docs.crewai.com/concepts/crews):
+`kickoff_for_each(inputs=[{...}, {...}])` "executes tasks sequentially for each
+provided input" and **returns a list of outputs, one per input, processed in
+order**, with a thread-based async variant (`kickoff_for_each_async`). The
+rcrewai 0.5.0 core mirrors this exactly (`Array(inputs).map { |i| execute(inputs:
+i) }`). This design preserves that behavior: N inputs → N runs in order, each
+producing an independent result/Execution, plus an async variant.
+
+**Naming:** the Rails methods are `execute_batch_sync` / `execute_batch_async`
+(not `kickoff_for_each`), matching the engine's existing `execute_sync` /
+`execute_async` convention. The *behavior* matches CrewAI; the method names follow
+the established Rails-engine API style rather than importing CrewAI's Python name.
+
 ## Grounding: the 0.5.0 core API
 
 ```ruby
