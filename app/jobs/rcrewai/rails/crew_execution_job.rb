@@ -5,10 +5,11 @@ module RcrewAI
 
       retry_on StandardError, wait: :exponentially_longer, attempts: 3
 
-      def perform(crew, inputs = {})
+      def perform(crew, inputs = {}, batch_id: nil)
         execution = crew.executions.create!(
           status: "pending",
-          inputs: inputs
+          inputs: inputs,
+          batch_id: batch_id
         )
 
         begin
