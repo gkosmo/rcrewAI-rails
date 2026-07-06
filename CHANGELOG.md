@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `guardrail_max_retries`, `output_file`, `create_directory`, `markdown`, and
   multimodal `attachments`. Options are emitted only when meaningfully set, so
   existing tasks construct unchanged (#7).
+- Forward rcrewai 0.5.0 crew options through `RcrewAI::Rails::Crew#to_rcrew`:
+  `planning` / `planning_llm`, and `before_kickoff` / `after_kickoff` lifecycle
+  hooks (resolved from `*_class` + `*_method` columns). Options are emitted and
+  hooks registered only when configured, so existing crews build unchanged (#9).
 
 ### Changed
 - Require `rcrewai ~> 0.5` (was `~> 0.3`) (#6).
