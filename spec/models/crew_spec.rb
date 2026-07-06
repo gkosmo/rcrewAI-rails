@@ -111,4 +111,81 @@ RSpec.describe RcrewAI::Rails::Crew, type: :model do
       expect(crew.instance_variable_get(:@after_kickoff_hooks)).to be_empty
     end
   end
+
+  describe "batch execution" do
+    let(:batch_crew) do
+      c = RcrewAI::Rails::Crew.create!(name: "Batch", process_type: "sequential")
+      agent = c.agents.create!(name: "a", role: "Worker")
+      c.tasks.create!(description: "do it", expected_output: "ok", agent: agent)
+      c
+    end
+
+    describe "#execute_batch_sync" do
+      it "creates one completed execution per input, sharing a batch_id" do
+        result = batch_crew.execute_batch_sync([{ topic: "a" }, { topic: "b" }])
+
+        execs = batch_crew.executions.where(batch_id: result[:batch_id])
+        expect(execs.count).to eq(2)
+        expect(execs.pluck(:status).uniq).to eq(["completed"])
+        expect(result[:batch_id]).to be_a(String)
+        expect(result[:executions].length).to eq(2)
+      end
+
+      it "preserves each input on its own execution" do
+        batch_crew.execute_batch_sync([{ "topic" => "a" }, { "topic" => "b" }])
+
+        topics = batch_crew.executions.order(:created_at, :id).map { |e| e.inputs["topic"] }
+        expect(topics).to eq(["a", "b"])
+      end
+
+      it "accepts a single inputs hash as a one-run batch" do
+        result = batch_crew.execute_batch_sync({ topic: "solo" })
+
+        execs = batch_crew.executions.where(batch_id: result[:batch_id])
+        expect(execs.count).to eq(1)
+        expect(execs.first.inputs).to eq({ "topic" => "solo" })
+      end
+
+      it "runs nothing for an empty input list" do
+        result = batch_crew.execute_batch_sync([])
+
+        expect(result[:executions]).to be_empty
+        expect(batch_crew.executions.count).to eq(0)
+      end
+    end
+
+    describe "#batch_executions" do
+      it "returns the executions for a batch ordered by created_at" do
+        result = batch_crew.execute_batch_sync([{ topic: "a" }, { topic: "b" }])
+
+        rows = batch_crew.batch_executions(result[:batch_id])
+        expect(rows.map(&:batch_id).uniq).to eq([result[:batch_id]])
+        expect(rows.count).to eq(2)
+      end
+    end
+
+    describe "#execute_batch_async" do
+      around do |example|
+        previous_adapter = ActiveJob::Base.queue_adapter
+        ActiveJob::Base.queue_adapter = :test
+        example.run
+        ActiveJob::Base.queue_adapter = previous_adapter
+      end
+
+      it "enqueues one job per input and returns a String batch_id" do
+        batch_id = nil
+        expect {
+          batch_id = batch_crew.execute_batch_async([{ topic: "a" }, { topic: "b" }])
+        }.to have_enqueued_job(RcrewAI::Rails::CrewExecutionJob).twice
+
+        expect(batch_id).to be_a(String)
+      end
+    end
+
+    it "leaves batch_id nil for a normal execute_sync run" do
+      batch_crew.execute_sync({ topic: "solo" })
+
+      expect(batch_crew.executions.order(:created_at, :id).last.batch_id).to be_nil
+    end
+  end
 end
