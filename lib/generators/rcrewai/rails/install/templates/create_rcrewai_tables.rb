@@ -9,6 +9,12 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.boolean :cache_enabled, default: false
       t.integer :max_rpm
       t.string :manager_llm
+      t.boolean :planning, default: false, null: false
+      t.string :planning_llm
+      t.string :before_kickoff_class
+      t.string :before_kickoff_method
+      t.string :after_kickoff_class
+      t.string :after_kickoff_method
       t.text :config
       t.text :memory
       t.boolean :active, default: true
