@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-06
+
+Feature-parity release: brings the rcrewai 0.4/0.5 agent, task, and crew
+capabilities to the Rails engine. Requires `rcrewai ~> 0.5`. All additive —
+existing agents, tasks, and crews build unchanged.
+
 ### Added
 - Forward rcrewai 0.5.0 agent options through `RcrewAI::Rails::Agent#to_rcrew_agent`:
   `reasoning`, `max_reasoning_attempts`, `respect_context_window`, and per-agent
@@ -61,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gkosmo/rcrewai-rails/releases/tag/v0.3.0
