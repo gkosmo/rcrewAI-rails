@@ -132,7 +132,7 @@ ActiveRecord::Schema.define(version: 1) do
     t.references :owner, polymorphic: true, null: false
     t.string :source_type, null: false
     t.text :value, null: false
-    t.boolean :active, default: true
+    t.boolean :active, default: true, null: false
     t.timestamps
   end
 end
