@@ -20,7 +20,8 @@ module RcrewAI
         crew = RCrewAI::Crew.new(
           name,
           process: process_type.to_sym,
-          verbose: verbose
+          verbose: verbose,
+          **crew_planning_options
         )
 
         agents.each do |agent|
@@ -31,7 +32,17 @@ module RcrewAI
           crew.add_task(task.to_rcrew_task)
         end
 
+        register_kickoff_hooks(crew)
         crew
+      end
+
+      # rcrewai 0.5.0 planning options. Emit a key only when meaningfully set, so
+      # an all-default crew constructs exactly as it did before.
+      def crew_planning_options
+        opts = {}
+        opts[:planning] = planning if planning
+        opts[:planning_llm] = planning_llm.to_sym if planning_llm.present?
+        opts
       end
 
       def execute_async(inputs = {})
@@ -54,6 +65,28 @@ module RcrewAI
           pending: executions.pending.count,
           average_duration: executions.successful.average(:duration_seconds)
         }
+      end
+
+      private
+
+      # Registers before/after kickoff hooks resolved from *_class + *_method
+      # columns, mirroring the guardrail/callback pattern. No-op when unconfigured.
+      def register_kickoff_hooks(crew)
+        if (before = hook_callable(before_kickoff_class, before_kickoff_method))
+          crew.before_kickoff { |inputs| before.call(inputs) }
+        end
+
+        if (after = hook_callable(after_kickoff_class, after_kickoff_method))
+          crew.after_kickoff { |result| after.call(result) }
+        end
+      end
+
+      # Resolves a *_class + *_method pair to a callable; nil when either is blank.
+      def hook_callable(class_name, method_name)
+        return nil unless class_name.present? && method_name.present?
+
+        klass = class_name.constantize
+        ->(arg) { klass.new.send(method_name, arg) }
       end
     end
   end
