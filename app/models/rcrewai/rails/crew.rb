@@ -53,6 +53,26 @@ module RcrewAI
         CrewExecutionJob.perform_now(self, inputs)
       end
 
+      def execute_batch_async(inputs_list)
+        batch_id = SecureRandom.uuid
+        Array(inputs_list).each do |inputs|
+          CrewExecutionJob.perform_later(self, inputs, batch_id: batch_id)
+        end
+        batch_id
+      end
+
+      def execute_batch_sync(inputs_list)
+        batch_id = SecureRandom.uuid
+        Array(inputs_list).each do |inputs|
+          CrewExecutionJob.perform_now(self, inputs, batch_id: batch_id)
+        end
+        { batch_id: batch_id, executions: batch_executions(batch_id).to_a }
+      end
+
+      def batch_executions(batch_id)
+        executions.where(batch_id: batch_id).order(:created_at, :id)
+      end
+
       def last_execution
         executions.order(created_at: :desc).first
       end
