@@ -51,6 +51,13 @@ ActiveRecord::Schema.define(version: 1) do
     t.text :output_json
     t.text :output_pydantic
     t.string :output_file
+    t.text :output_schema
+    t.string :guardrail_class
+    t.string :guardrail_method_name
+    t.integer :guardrail_max_retries, default: 3
+    t.boolean :create_directory, default: true
+    t.boolean :markdown, default: false
+    t.text :attachments
     t.text :tools
     t.string :callback_class
     t.string :callback_method_name
