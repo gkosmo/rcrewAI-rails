@@ -123,5 +123,14 @@ RSpec.describe RcrewAI::Rails::Task, type: :model do
 
       expect(captured[:attachments]).to eq([{ type: :image, url: "http://x/y.png" }])
     end
+
+    it "does not forward guardrail_max_retries when the guardrail method is missing" do
+      captured = capture_task_kwargs do
+        build_task(guardrail_class: "GroupBTestGuardrail", guardrail_max_retries: 5).to_rcrew_task
+      end
+
+      expect(captured).not_to have_key(:guardrail)
+      expect(captured).not_to have_key(:guardrail_max_retries)
+    end
   end
 end

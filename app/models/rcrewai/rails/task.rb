@@ -41,7 +41,7 @@ module RcrewAI
         opts = {}
         opts[:output_schema] = output_schema.deep_symbolize_keys if output_schema.present?
         opts[:guardrail] = guardrail_callable if guardrail_callable
-        opts[:guardrail_max_retries] = guardrail_max_retries if guardrail_class.present? && guardrail_max_retries
+        opts[:guardrail_max_retries] = guardrail_max_retries if guardrail_callable && guardrail_max_retries
         opts[:output_file] = output_file if output_file.present?
         opts[:create_directory] = create_directory unless create_directory.nil?
         opts[:markdown] = markdown if markdown
