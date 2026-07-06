@@ -55,7 +55,7 @@ module RcrewAI
 
       def execute_batch_async(inputs_list)
         batch_id = SecureRandom.uuid
-        Array(inputs_list).each do |inputs|
+        normalize_batch_inputs(inputs_list).each do |inputs|
           CrewExecutionJob.perform_later(self, inputs, batch_id: batch_id)
         end
         batch_id
@@ -63,7 +63,7 @@ module RcrewAI
 
       def execute_batch_sync(inputs_list)
         batch_id = SecureRandom.uuid
-        Array(inputs_list).each do |inputs|
+        normalize_batch_inputs(inputs_list).each do |inputs|
           CrewExecutionJob.perform_now(self, inputs, batch_id: batch_id)
         end
         { batch_id: batch_id, executions: batch_executions(batch_id).to_a }
@@ -88,6 +88,12 @@ module RcrewAI
       end
 
       private
+
+      # Wraps a single inputs hash into a one-element array; leaves an array of
+      # hashes as-is. Avoids Array()'s hash-destructuring (Array({a:1}) => [[:a,1]]).
+      def normalize_batch_inputs(inputs_list)
+        inputs_list.is_a?(Hash) ? [inputs_list] : Array(inputs_list)
+      end
 
       # Registers before/after kickoff hooks resolved from *_class + *_method
       # columns, mirroring the guardrail/callback pattern. No-op when unconfigured.

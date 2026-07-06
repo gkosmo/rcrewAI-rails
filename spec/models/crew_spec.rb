@@ -137,6 +137,14 @@ RSpec.describe RcrewAI::Rails::Crew, type: :model do
         topics = batch_crew.executions.order(:created_at, :id).map { |e| e.inputs["topic"] }
         expect(topics).to eq(["a", "b"])
       end
+
+      it "accepts a single inputs hash as a one-run batch" do
+        result = batch_crew.execute_batch_sync({ topic: "solo" })
+
+        execs = batch_crew.executions.where(batch_id: result[:batch_id])
+        expect(execs.count).to eq(1)
+        expect(execs.first.inputs).to eq({ "topic" => "solo" })
+      end
     end
 
     describe "#batch_executions" do
