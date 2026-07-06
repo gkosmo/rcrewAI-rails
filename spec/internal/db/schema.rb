@@ -135,4 +135,11 @@ ActiveRecord::Schema.define(version: 1) do
     t.boolean :active, default: true, null: false
     t.timestamps
   end
+
+  create_table :rcrewai_flow_states, force: true do |t|
+    t.string :state_id, null: false
+    t.text :data, null: false
+    t.timestamps
+  end
+  add_index :rcrewai_flow_states, :state_id, unique: true
 end
