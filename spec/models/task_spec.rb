@@ -69,6 +69,7 @@ RSpec.describe RcrewAI::Rails::Task, type: :model do
       expect(captured).not_to have_key(:output_file)
       expect(captured).not_to have_key(:markdown)
       expect(captured).not_to have_key(:attachments)
+      expect(captured).not_to have_key(:create_directory)
     end
 
     it "forwards output_schema as a deep-symbolized hash" do

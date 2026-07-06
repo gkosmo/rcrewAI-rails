@@ -43,7 +43,9 @@ module RcrewAI
         opts[:guardrail] = guardrail_callable if guardrail_callable
         opts[:guardrail_max_retries] = guardrail_max_retries if guardrail_callable && guardrail_max_retries
         opts[:output_file] = output_file if output_file.present?
-        opts[:create_directory] = create_directory unless create_directory.nil?
+        # Core defaults create_directory to true; only forward when explicitly
+        # disabled, so an all-default record still emits nothing.
+        opts[:create_directory] = false if create_directory == false
         opts[:markdown] = markdown if markdown
         opts[:attachments] = normalized_attachments if attachments.present?
         opts
