@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-06
+
+Adds the second CrewAI pillar — **Flows** — to the Rails engine as a persistence
+layer, completing the rcrewai 0.4/0.5 feature-parity effort. Additive; existing
+crews, agents, and tasks are unaffected.
+
 ### Added
 - Flows persistence: `RcrewAI::Rails::ActiveRecordStateStore` backs rcrewai Flow
   state with a `rcrewai_flow_states` table so flows resume from the DB
@@ -75,7 +81,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/gkosmo/rcrewai-rails/releases/tag/v0.3.0
