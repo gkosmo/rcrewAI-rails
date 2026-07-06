@@ -123,5 +123,14 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
 
     add_index :rcrewai_execution_logs, :level
     add_index :rcrewai_execution_logs, :timestamp
+
+    create_table :rcrewai_knowledge_sources do |t|
+      t.references :owner, polymorphic: true, null: false
+      t.string :source_type, null: false
+      t.text :value, null: false
+      t.boolean :active, default: true
+
+      t.timestamps
+    end
   end
 end
