@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `#execute_batch_async` run the crew once per input set, creating one `Execution`
   per input grouped by a shared `batch_id` (new nullable column). `#batch_executions`
   returns a batch's runs in order. Existing single-run executions are unaffected (#10).
+- Knowledge (RAG) sources: a polymorphic `RcrewAI::Rails::KnowledgeSource`
+  (owned by an Agent or a Crew) persists `{source_type, value}` for string, file,
+  PDF, CSV, and URL sources. `Agent#to_rcrew_agent` / `Crew#to_rcrew` forward
+  active sources as `knowledge_sources:`; the core embeds them lazily at
+  execution. Emitted only when sources exist, so existing agents/crews are
+  unaffected (#11).
 
 ### Changed
 - Require `rcrewai ~> 0.5` (was `~> 0.3`) (#6).
