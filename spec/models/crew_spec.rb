@@ -104,5 +104,11 @@ RSpec.describe RcrewAI::Rails::Crew, type: :model do
 
       expect(crew.instance_variable_get(:@before_kickoff_hooks)).to be_empty
     end
+
+    it "does not register an after hook when only the class is set (method blank)" do
+      crew = build_crew(after_kickoff_class: "GroupCAfterHook").to_rcrew
+
+      expect(crew.instance_variable_get(:@after_kickoff_hooks)).to be_empty
+    end
   end
 end
