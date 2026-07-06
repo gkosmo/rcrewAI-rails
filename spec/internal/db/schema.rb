@@ -99,10 +99,12 @@ ActiveRecord::Schema.define(version: 1) do
     t.datetime :started_at
     t.datetime :completed_at
     t.integer :duration_seconds
+    t.string :batch_id
     t.timestamps
   end
   add_index :rcrewai_executions, :status
   add_index :rcrewai_executions, :created_at
+  add_index :rcrewai_executions, :batch_id
 
   create_table :rcrewai_execution_logs, force: true do |t|
     t.references :execution, null: false, foreign_key: { to_table: :rcrewai_executions }

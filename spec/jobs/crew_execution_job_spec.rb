@@ -38,4 +38,24 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
     expect(execution.error_message).to eq("boom")
     expect(execution.execution_logs.where(level: "error")).to be_present
   end
+
+  it "stamps batch_id on the execution when given one" do
+    agent = crew.agents.create!(name: "a", role: "Worker")
+    crew.tasks.create!(description: "do it", expected_output: "ok", agent: agent)
+
+    described_class.new.perform(crew, {}, batch_id: "batch-xyz")
+
+    execution = crew.executions.order(:id).last
+    expect(execution.batch_id).to eq("batch-xyz")
+  end
+
+  it "leaves batch_id nil for a normal run" do
+    agent = crew.agents.create!(name: "a", role: "Worker")
+    crew.tasks.create!(description: "do it", expected_output: "ok", agent: agent)
+
+    described_class.new.perform(crew)
+
+    execution = crew.executions.order(:id).last
+    expect(execution.batch_id).to be_nil
+  end
 end
