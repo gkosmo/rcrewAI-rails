@@ -6,6 +6,7 @@ module RcrewAI
       has_many :agents, dependent: :destroy
       has_many :tasks, dependent: :destroy
       has_many :executions, dependent: :destroy
+      has_many :knowledge_sources, as: :owner, class_name: "RcrewAI::Rails::KnowledgeSource", dependent: :destroy
 
       validates :name, presence: true
       validates :process_type, inclusion: { in: %w[sequential hierarchical] }

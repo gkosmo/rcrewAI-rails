@@ -6,6 +6,7 @@ module RcrewAI
       belongs_to :crew
       has_many :tasks, dependent: :nullify
       has_many :tools, class_name: 'RcrewAI::Rails::Tool', dependent: :destroy
+      has_many :knowledge_sources, as: :owner, class_name: "RcrewAI::Rails::KnowledgeSource", dependent: :destroy
 
       validates :name, presence: true
       validates :role, presence: true

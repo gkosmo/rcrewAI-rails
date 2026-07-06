@@ -127,4 +127,12 @@ ActiveRecord::Schema.define(version: 1) do
     t.timestamps
   end
   add_index :rcrewai_tools, :active
+
+  create_table :rcrewai_knowledge_sources, force: true do |t|
+    t.references :owner, polymorphic: true, null: false
+    t.string :source_type, null: false
+    t.text :value, null: false
+    t.boolean :active, default: true
+    t.timestamps
+  end
 end
