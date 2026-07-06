@@ -43,7 +43,12 @@ module RcrewAI
         opts = {}
         opts[:planning] = planning if planning
         opts[:planning_llm] = planning_llm.to_sym if planning_llm.present?
+        opts[:knowledge_sources] = rcrew_knowledge_sources if rcrew_knowledge_sources.any?
         opts
+      end
+
+      def rcrew_knowledge_sources
+        knowledge_sources.active.map(&:to_rcrew_source)
       end
 
       def execute_async(inputs = {})

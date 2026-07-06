@@ -188,4 +188,44 @@ RSpec.describe RcrewAI::Rails::Crew, type: :model do
       expect(batch_crew.executions.order(:created_at, :id).last.batch_id).to be_nil
     end
   end
+
+  describe "knowledge source forwarding" do
+    def capture_crew_kwargs
+      captured = nil
+      allow(RCrewAI::Crew).to receive(:new).and_wrap_original do |orig, name, **kwargs|
+        captured = kwargs
+        orig.call(name, **kwargs)
+      end
+      yield
+      captured
+    end
+
+    it "forwards active knowledge sources as core Source objects" do
+      c = RcrewAI::Rails::Crew.create!(name: "K", process_type: "sequential")
+      c.knowledge_sources.create!(source_type: "string", value: "hello")
+
+      captured = capture_crew_kwargs { c.to_rcrew }
+
+      expect(captured[:knowledge_sources]).to be_an(Array)
+      expect(captured[:knowledge_sources].first).to be_a(RCrewAI::Knowledge::StringSource)
+    end
+
+    it "does not forward knowledge_sources when the crew has none" do
+      c = RcrewAI::Rails::Crew.create!(name: "K", process_type: "sequential")
+
+      captured = capture_crew_kwargs { c.to_rcrew }
+
+      expect(captured).not_to have_key(:knowledge_sources)
+    end
+
+    it "excludes inactive sources" do
+      c = RcrewAI::Rails::Crew.create!(name: "K", process_type: "sequential")
+      c.knowledge_sources.create!(source_type: "string", value: "keep", active: true)
+      c.knowledge_sources.create!(source_type: "string", value: "drop", active: false)
+
+      captured = capture_crew_kwargs { c.to_rcrew }
+
+      expect(captured[:knowledge_sources].length).to eq(1)
+    end
+  end
 end
