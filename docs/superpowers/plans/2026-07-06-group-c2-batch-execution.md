@@ -233,7 +233,7 @@ In `app/models/rcrewai/rails/crew.rb`, add these three public methods next to th
       end
 ```
 
-Note: `SecureRandom` is available in Rails without an explicit require. `Array(inputs_list)` wraps a single hash into a one-element array and leaves an array as-is (a bare Hash responds to neither `to_ary`/`to_a` in a way that splits it, so `Array({a: 1})` returns `[{a: 1}]` — correct).
+Note: `SecureRandom` is available in Rails without an explicit require. CAUTION: `Array()` destructures a bare Hash (`Array({a: 1})` → `[[:a, 1]]`, NOT `[{a: 1}]`), so a single-hash input must be guarded explicitly — see the `normalize_batch_inputs` helper added in the review fix, which does `inputs_list.is_a?(Hash) ? [inputs_list] : Array(inputs_list)`.
 
 Ordering note: `order(:created_at, :id)` uses `id` as a deterministic tiebreaker. Two executions created in the same synchronous loop can share a `created_at` value at the column's timestamp precision; `id` (monotonic autoincrement) guarantees stable creation order regardless. This is why the "preserves each input" test can safely assert `["a", "b"]`.
 
