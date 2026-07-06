@@ -121,4 +121,46 @@ RSpec.describe RcrewAI::Rails::Agent, type: :model do
       expect(captured[:llm]).to eq(provider: "anthropic", model: "claude-sonnet-5")
     end
   end
+
+  describe "knowledge source forwarding" do
+    let(:crew) { RcrewAI::Rails::Crew.create!(name: "C", process_type: "sequential") }
+
+    def capture_agent_kwargs
+      captured = nil
+      allow(RCrewAI::Agent).to receive(:new).and_wrap_original do |orig, **kwargs|
+        captured = kwargs
+        orig.call(**kwargs)
+      end
+      yield
+      captured
+    end
+
+    it "forwards active knowledge sources as core Source objects" do
+      agent = crew.agents.create!(name: "a", role: "R", goal: "G")
+      agent.knowledge_sources.create!(source_type: "string", value: "hello")
+
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+
+      expect(captured[:knowledge_sources]).to be_an(Array)
+      expect(captured[:knowledge_sources].first).to be_a(RCrewAI::Knowledge::StringSource)
+    end
+
+    it "does not forward knowledge_sources when the agent has none" do
+      agent = crew.agents.create!(name: "a", role: "R", goal: "G")
+
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+
+      expect(captured).not_to have_key(:knowledge_sources)
+    end
+
+    it "excludes inactive sources" do
+      agent = crew.agents.create!(name: "a", role: "R", goal: "G")
+      agent.knowledge_sources.create!(source_type: "string", value: "keep", active: true)
+      agent.knowledge_sources.create!(source_type: "string", value: "drop", active: false)
+
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+
+      expect(captured[:knowledge_sources].length).to eq(1)
+    end
+  end
 end

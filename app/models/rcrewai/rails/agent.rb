@@ -39,7 +39,12 @@ module RcrewAI
         opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
         opts[:respect_context_window] = respect_context_window if respect_context_window
         opts[:llm] = llm_config.symbolize_keys if llm_config.present?
+        opts[:knowledge_sources] = rcrew_knowledge_sources if rcrew_knowledge_sources.any?
         opts
+      end
+
+      def rcrew_knowledge_sources
+        knowledge_sources.active.map(&:to_rcrew_source)
       end
 
       def instantiated_tools
