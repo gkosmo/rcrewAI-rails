@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Flows persistence: `RcrewAI::Rails::ActiveRecordStateStore` backs rcrewai Flow
+  state with a `rcrewai_flow_states` table so flows resume from the DB
+  (`flow.restore(state_id)`), and `RcrewAI::Rails::FlowRun` records each kickoff
+  (status, state id, inputs, result, timing) via `FlowRun.execute(FlowClass,
+  inputs:)`. Flow subclasses are still defined in the host app; the engine adds
+  the persistence layer (#13).
+
 ## [0.4.0] - 2026-07-06
 
 Feature-parity release: brings the rcrewai 0.4/0.5 agent, task, and crew
