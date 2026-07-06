@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Forward rcrewai 0.5.0 agent options through `RcrewAI::Rails::Agent#to_rcrew_agent`:
+  `reasoning`, `max_reasoning_attempts`, `respect_context_window`, and per-agent
+  `llm` (from the `llm_config` column). Also fixes a latent gap where the existing
+  `max_rpm` and `llm_config` columns were never passed to the core agent. New
+  columns are added via a host migration, the install generator, and the test
+  schema; all options are emitted only when set, so existing agents are
+  unaffected (#6).
+- Forward rcrewai 0.4/0.5 task output-processing options through
+  `RcrewAI::Rails::Task#to_rcrew_task`: `output_schema` (structured output),
+  `guardrail` (resolved from `guardrail_class` + `guardrail_method_name`),
+  `guardrail_max_retries`, `output_file`, `create_directory`, `markdown`, and
+  multimodal `attachments`. Options are emitted only when meaningfully set, so
+  existing tasks construct unchanged (#7).
+
+### Changed
+- Require `rcrewai ~> 0.5` (was `~> 0.3`) (#6).
+
 ## [0.3.1] - 2026-06-16
 
 ### Added
