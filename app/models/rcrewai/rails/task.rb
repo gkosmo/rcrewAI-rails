@@ -15,6 +15,8 @@ module RcrewAI
       serialize :output_json, coder: JSON
       serialize :output_pydantic, coder: JSON
       serialize :tools, coder: JSON, type: Array
+      serialize :output_schema, coder: JSON
+      serialize :attachments, coder: JSON, type: Array
 
       scope :ordered, -> { order(:order_index) }
 
@@ -27,8 +29,24 @@ module RcrewAI
           context: context,
           async: async_execution,
           tools: instantiated_tools,
-          callback: callback_method
+          callback: callback_method,
+          **task_output_options
         )
+      end
+
+      # rcrewai 0.4/0.5 task output-processing options. Only emit a key when it
+      # is meaningfully set, so an all-default record constructs exactly as it
+      # did before these options existed.
+      def task_output_options
+        opts = {}
+        opts[:output_schema] = output_schema.deep_symbolize_keys if output_schema.present?
+        opts[:guardrail] = guardrail_callable if guardrail_callable
+        opts[:guardrail_max_retries] = guardrail_max_retries if guardrail_class.present? && guardrail_max_retries
+        opts[:output_file] = output_file if output_file.present?
+        opts[:create_directory] = create_directory unless create_directory.nil?
+        opts[:markdown] = markdown if markdown
+        opts[:attachments] = normalized_attachments if attachments.present?
+        opts
       end
 
 
@@ -64,6 +82,24 @@ module RcrewAI
         
         klass = callback_class.constantize
         ->(output) { klass.new.send(callback_method_name, output) }
+      end
+
+      # Resolves guardrail_class + guardrail_method_name to a callable returning
+      # the core [ok, value_or_error] contract. Mirrors callback_method. nil when
+      # not configured.
+      def guardrail_callable
+        return nil unless guardrail_class.present? && guardrail_method_name.present?
+
+        klass = guardrail_class.constantize
+        ->(output) { klass.new.send(guardrail_method_name, output) }
+      end
+
+      # Symbolizes each attachment hash so { "type" => "image", "url" => ... }
+      # becomes { type: :image, url: ... } as the core Multimodal builder expects.
+      def normalized_attachments
+        attachments.map do |att|
+          att.symbolize_keys.tap { |h| h[:type] = h[:type].to_sym if h[:type] }
+        end
       end
     end
   end
