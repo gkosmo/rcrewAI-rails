@@ -12,9 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "consensual"` is now valid, a nullable `consensus_agents` column is forwarded to
   the core crew (defaulting to the core's 3 when unset), and the web UI + API
   permit it. Existing sequential/hierarchical crews are unaffected.
+- Agent memory configuration: enable rcrewai 0.6+ cognitive memory per agent via
+  the existing `memory_enabled` flag, with `memory_scope` /
+  `memory_short_term_limit` columns forwarded to the core agent. The embedder and
+  store come from `RcrewAI::Rails.config.default_memory_embedder` /
+  `default_memory_store` (set in a host initializer). Memory is off by default, so
+  existing agents are unaffected.
 
 ### Changed
 - Require `rcrewai ~> 0.7` (was `~> 0.5`).
+
+### Removed
+- Dropped the unused `memory_enabled` and `memory` columns from `rcrewai_crews`.
+  Core memory is agent-level; these crew columns were never wired to anything.
+  **Migration note:** the `009` migration removes them (reversible).
 
 ## [0.5.1] - 2026-07-06
 
