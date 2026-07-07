@@ -9,7 +9,7 @@ module RcrewAI
       has_many :knowledge_sources, as: :owner, class_name: "RcrewAI::Rails::KnowledgeSource", dependent: :destroy
 
       validates :name, presence: true
-      validates :process_type, inclusion: { in: %w[sequential hierarchical] }
+      validates :process_type, inclusion: { in: %w[sequential hierarchical consensual] }
 
       serialize :config, coder: JSON
       serialize :memory, coder: JSON
@@ -45,6 +45,7 @@ module RcrewAI
         opts[:planning_llm] = planning_llm.to_sym if planning_llm.present?
         sources = rcrew_knowledge_sources
         opts[:knowledge_sources] = sources if sources.any?
+        opts[:consensus_agents] = consensus_agents if consensus_agents.present?
         opts
       end
 

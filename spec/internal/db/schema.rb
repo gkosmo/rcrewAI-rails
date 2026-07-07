@@ -12,6 +12,7 @@ ActiveRecord::Schema.define(version: 1) do
     t.boolean :cache_enabled, default: false
     t.integer :max_rpm
     t.string :manager_llm
+    t.integer :consensus_agents
     t.boolean :planning, default: false, null: false
     t.string :planning_llm
     t.string :before_kickoff_class
