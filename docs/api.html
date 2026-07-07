@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RcrewAI Rails — AI agent crews for Rails</title>
-<meta name="description" content="A Rails engine for orchestrating AI agents with ActiveRecord persistence, background jobs, generators, a web dashboard, and full rcrewai 0.7 feature coverage.">
+<title>API & Models — RcrewAI Rails</title>
+<meta name="description" content="ActiveRecord models and the JSON API surface exposed by the RcrewAI Rails engine.">
 <style>
   :root {
     --crimson: #c4221f;
@@ -143,105 +143,68 @@
   <div class="wrap nav">
     <span class="brand"><span class="dot"></span>RcrewAI&nbsp;Rails</span>
     <nav class="nav-links">
-      <a href="index.html" class="active">Home</a>
+      <a href="index.html">Home</a>
       <a href="getting-started.html">Getting Started</a>
       <a href="capabilities.html">Capabilities</a>
       <a href="examples.html">Examples</a>
-      <a href="api.html">API</a>
+      <a href="api.html" class="active">API</a>
       <a class="gh" href="https://github.com/gkosmo/rcrewai-rails">GitHub →</a>
     </nav>
   </div>
 </header>
 
-<section class="hero">
+<section class="page-hero">
   <div class="wrap">
-    <h1>Build AI agent crews,<br><span class="accent">the Rails way.</span></h1>
-    <p class="lead">A Rails engine for orchestrating AI agents — with ActiveRecord persistence, background-job execution, generators, a web dashboard, and full rcrewai 0.7 feature coverage.</p>
-    <div class="install-line"><span class="prompt">gem </span>'rcrewai-rails'</div>
-    <div class="cta">
-      <a class="btn btn-primary" href="getting-started.html">Get Started</a>
-      <a class="btn btn-secondary" href="https://github.com/gkosmo/rcrewai-rails">View on GitHub</a>
-    </div>
+    <h1>API &amp; Models</h1>
+    <p>ActiveRecord models and the JSON API surface.</p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>Everything you need</h2>
-    <p class="sub">A batteries-included engine for AI agent orchestration in Rails.</p>
-    <div class="grid">
-      <div class="feature">
-        <span class="ic">🗄️</span>
-        <h3>ActiveRecord Integration</h3>
-        <p>Persist crews, agents, tasks, and executions directly in your database.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">⚙️</span>
-        <h3>Background Jobs</h3>
-        <p>Runs through ActiveJob — works with Sidekiq, Resque, Delayed Job, or any adapter.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🏗️</span>
-        <h3>Rails Generators</h3>
-        <p>Scaffold new crews and agents from the command line in seconds.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">📊</span>
-        <h3>Web Dashboard</h3>
-        <p>Monitor executions, view logs, and manage crews through a built-in UI.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🤖</span>
-        <h3>Multi-LLM Support</h3>
-        <p>OpenAI GPT, Anthropic Claude, Google Gemini, Azure OpenAI, and Ollama.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🧰</span>
-        <h3>Rails-Specific Tools</h3>
-        <p>Pre-built tools for ActiveRecord, ActionMailer, the Rails cache, and more.</p>
-      </div>
-    </div>
+    <h2>Database models</h2>
+    <p class="sub">The persisted models the engine installs.</p>
+    <ul class="clean">
+      <li><code>RcrewAI::Rails::Crew</code> — Crew configurations</li>
+      <li><code>RcrewAI::Rails::Agent</code> — Agent definitions</li>
+      <li><code>RcrewAI::Rails::Task</code> — Task definitions</li>
+      <li><code>RcrewAI::Rails::Execution</code> — Execution history (batch runs share a batch_id)</li>
+      <li><code>RcrewAI::Rails::ExecutionLog</code> — Detailed execution logs</li>
+      <li><code>RcrewAI::Rails::KnowledgeSource</code> — Knowledge (RAG) sources, owned by an agent or a crew</li>
+      <li><code>RcrewAI::Rails::FlowState</code> — Persisted rcrewai Flow state (resume flows across restarts)</li>
+      <li><code>RcrewAI::Rails::FlowRun</code> — Flow-run tracking (status, inputs, result, timing)</li>
+    </ul>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>What's new <span class="badge">0.4 – 0.7</span></h2>
-    <p class="sub">Full parity with rcrewai 0.4–0.7, surfaced through ActiveRecord.</p>
-    <div class="whatsnew">
-      <div class="wn-item">
-        <h4>Agent intelligence</h4>
-        <p>Reasoning passes, per-agent LLM overrides, rate limiting, context-window trimming, and cognitive memory.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Task output</h4>
-        <p>Structured output schemas, guardrails, file output, and multimodal image attachments.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Crew orchestration</h4>
-        <p>before/after kickoff hooks, planning, the consensual process, and batch execution.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Knowledge (RAG)</h4>
-        <p>String, file, PDF, CSV, and URL sources attached to agents or crews.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Flows</h4>
-        <p>Persist and resume rcrewai Flow state through the database; track each run.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Cognitive memory</h4>
-        <p>Semantic recall with a pluggable embedder and SQLite-backed store.</p>
-      </div>
-    </div>
+    <h2>JSON API endpoints</h2>
+    <p>Served under /rcrewai/api/v1/.</p>
+    <table>
+      <thead><tr><th>Method</th><th>Path</th></tr></thead>
+      <tbody>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/crews</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/crews/:id</td></tr>
+        <tr><td><span class="verb post">POST</span></td><td class="method">/crews/:id/execute</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id/status</td></tr>
+        <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id/logs</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
 <section>
-  <div class="wrap" style="text-align:center;">
-    <h2>Ready to build?</h2>
-    <p class="sub">Install the engine and run your first crew in minutes.</p>
-    <a class="btn btn-primary" href="getting-started.html">Get Started →</a>
+  <div class="wrap">
+    <h2>Running executions</h2>
+    <p>Executions run through ActiveJob by default.</p>
+    <pre>crew.execute_async(inputs)   # enqueue (default)
+crew.execute_sync(inputs)    # run inline
+
+# Custom job options:
+CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)</pre>
   </div>
 </section>
 
