@@ -34,6 +34,8 @@ ActiveRecord::Schema.define(version: 1) do
     t.text :goal
     t.text :backstory
     t.boolean :memory_enabled, default: false
+    t.string :memory_scope
+    t.integer :memory_short_term_limit
     t.boolean :verbose, default: false
     t.boolean :allow_delegation, default: false
     t.text :tools

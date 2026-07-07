@@ -5,23 +5,20 @@ require "active_job"
 require "fileutils"
 require "tmpdir"
 
-# RcrewAI::Rails.config is consulted by queue_as { ... }; provide a minimal one.
-module RcrewAI
-  module Rails
-    class << self
-      def config
-        @config ||= Struct.new(:job_queue_name).new(:default)
-      end
-    end
-  end
-end
-
 require "rcrewai/rails/agent_builder" # not strictly required, but exercises load order
 
 # Load just the job class without dragging in the engine.
 require File.expand_path("../../app/jobs/rcrewai/rails/task_execution_job", __dir__)
 
 RSpec.describe RcrewAI::Rails::TaskExecutionJob do
+  # RcrewAI::Rails.config is consulted by queue_as { ... }; provide a minimal
+  # one without globally clobbering the real method (which would leak into
+  # other spec files loaded in the same run).
+  before do
+    allow(RcrewAI::Rails).to receive(:config)
+      .and_return(Struct.new(:job_queue_name).new(:default))
+  end
+
   before do
     ActiveJob::Base.queue_adapter = :test
     Rails.logger = Logger.new(File::NULL)

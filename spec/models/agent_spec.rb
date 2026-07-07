@@ -163,4 +163,49 @@ RSpec.describe RcrewAI::Rails::Agent, type: :model do
       expect(captured[:knowledge_sources].length).to eq(1)
     end
   end
+
+  describe "memory forwarding" do
+    let(:crew) { RcrewAI::Rails::Crew.create!(name: "C", process_type: "sequential") }
+
+    def capture_agent_kwargs
+      captured = nil
+      allow(RCrewAI::Agent).to receive(:new).and_wrap_original do |orig, **kwargs|
+        captured = kwargs
+        orig.call(**kwargs)
+      end
+      yield
+      captured
+    end
+
+    it "forwards no memory key when memory is disabled" do
+      agent = crew.agents.create!(name: "a", role: "R", goal: "G", memory_enabled: false)
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+      expect(captured).not_to have_key(:memory)
+    end
+
+    it "forwards an empty memory hash when enabled with no config" do
+      agent = crew.agents.create!(name: "a", role: "R", goal: "G", memory_enabled: true)
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+      expect(captured[:memory]).to eq({})
+    end
+
+    it "forwards memory scalars when set" do
+      agent = crew.agents.create!(
+        name: "a", role: "R", goal: "G",
+        memory_enabled: true, memory_scope: "team", memory_short_term_limit: 7
+      )
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+      expect(captured[:memory]).to eq(scope: "team", short_term_limit: 7)
+    end
+
+    it "forwards embedder and store from engine config when enabled" do
+      allow(RcrewAI::Rails.config).to receive(:default_memory_embedder).and_return(:emb)
+      allow(RcrewAI::Rails.config).to receive(:default_memory_store).and_return(:sto)
+      agent = crew.agents.create!(name: "a", role: "R", goal: "G", memory_enabled: true)
+
+      captured = capture_agent_kwargs { agent.to_rcrew_agent }
+      expect(captured[:memory][:embedder]).to eq(:emb)
+      expect(captured[:memory][:store]).to eq(:sto)
+    end
+  end
 end
