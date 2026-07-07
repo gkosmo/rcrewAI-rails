@@ -37,8 +37,9 @@ module RcrewAI
         crew
       end
 
-      # rcrewai 0.5.0 planning options. Emit a key only when meaningfully set, so
-      # an all-default crew constructs exactly as it did before.
+      # Crew construction options (planning, consensus_agents, knowledge). Emit a
+      # key only when meaningfully set, so an all-default crew constructs exactly
+      # as it did before.
       def crew_planning_options
         opts = {}
         opts[:planning] = planning if planning
