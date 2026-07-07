@@ -26,11 +26,6 @@ module RcrewAI
           @process_type || :sequential
         end
 
-        def memory_enabled(enabled = nil)
-          @memory_enabled = enabled unless enabled.nil?
-          @memory_enabled || false
-        end
-
         def cache_enabled(enabled = nil)
           @cache_enabled = enabled unless enabled.nil?
           @cache_enabled || true
@@ -66,7 +61,6 @@ module RcrewAI
         RcrewAI::Rails::Crew.find_or_create_by(name: self.class.crew_name) do |crew|
           crew.description = self.class.crew_description
           crew.process_type = self.class.process_type.to_s
-          crew.memory_enabled = self.class.memory_enabled
           crew.cache_enabled = self.class.cache_enabled
           crew.verbose = verbose?
         end
