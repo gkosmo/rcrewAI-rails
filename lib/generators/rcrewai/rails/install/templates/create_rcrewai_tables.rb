@@ -5,7 +5,6 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.text :description
       t.string :process_type, default: "sequential"
       t.boolean :verbose, default: false
-      t.boolean :memory_enabled, default: false
       t.boolean :cache_enabled, default: false
       t.integer :max_rpm
       t.string :manager_llm
@@ -17,7 +16,6 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.string :after_kickoff_class
       t.string :after_kickoff_method
       t.text :config
-      t.text :memory
       t.boolean :active, default: true
 
       t.timestamps
@@ -33,6 +31,8 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.text :goal
       t.text :backstory
       t.boolean :memory_enabled, default: false
+      t.string :memory_scope
+      t.integer :memory_short_term_limit
       t.boolean :verbose, default: false
       t.boolean :allow_delegation, default: false
       t.text :tools
