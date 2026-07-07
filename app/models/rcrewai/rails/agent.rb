@@ -41,7 +41,22 @@ module RcrewAI
         opts[:llm] = llm_config.symbolize_keys if llm_config.present?
         sources = rcrew_knowledge_sources
         opts[:knowledge_sources] = sources if sources.any?
+        opts[:memory] = memory_options if memory_enabled
         opts
+      end
+
+      # Agent memory config (rcrewai 0.6+). Scalars come from columns; embedder
+      # and store come from the engine configuration (set in a host initializer).
+      # May return {} — an empty hash still enables memory with core defaults.
+      def memory_options
+        m = {}
+        m[:scope] = memory_scope if memory_scope.present?
+        m[:short_term_limit] = memory_short_term_limit if memory_short_term_limit.present?
+        embedder = RcrewAI::Rails.config.default_memory_embedder
+        store = RcrewAI::Rails.config.default_memory_store
+        m[:embedder] = embedder if embedder
+        m[:store] = store if store
+        m
       end
 
       def rcrew_knowledge_sources

@@ -8,7 +8,6 @@ ActiveRecord::Schema.define(version: 1) do
     t.text :description
     t.string :process_type, default: "sequential"
     t.boolean :verbose, default: false
-    t.boolean :memory_enabled, default: false
     t.boolean :cache_enabled, default: false
     t.integer :max_rpm
     t.string :manager_llm
@@ -20,7 +19,6 @@ ActiveRecord::Schema.define(version: 1) do
     t.string :after_kickoff_class
     t.string :after_kickoff_method
     t.text :config
-    t.text :memory
     t.boolean :active, default: true
     t.timestamps
   end
@@ -34,6 +32,8 @@ ActiveRecord::Schema.define(version: 1) do
     t.text :goal
     t.text :backstory
     t.boolean :memory_enabled, default: false
+    t.string :memory_scope
+    t.integer :memory_short_term_limit
     t.boolean :verbose, default: false
     t.boolean :allow_delegation, default: false
     t.text :tools

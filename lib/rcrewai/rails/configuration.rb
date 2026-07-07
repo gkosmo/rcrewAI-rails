@@ -3,7 +3,8 @@ module RcrewAI
     class Configuration
       attr_accessor :job_queue_name, :enable_web_ui, :persistence_backend,
                     :default_llm_provider, :default_llm_model, :max_retries,
-                    :timeout, :enable_logging, :log_level, :async_execution
+                    :timeout, :enable_logging, :log_level, :async_execution,
+                    :default_memory_embedder, :default_memory_store
 
       def initialize
         @job_queue_name = "default"
@@ -16,6 +17,8 @@ module RcrewAI
         @enable_logging = true
         @log_level = :info
         @async_execution = true # Use ActiveJob for async by default
+        @default_memory_embedder = nil
+        @default_memory_store = nil
       end
     end
   end
