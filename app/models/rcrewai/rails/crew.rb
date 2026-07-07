@@ -12,7 +12,6 @@ module RcrewAI
       validates :process_type, inclusion: { in: %w[sequential hierarchical consensual] }
 
       serialize :config, coder: JSON
-      serialize :memory, coder: JSON
 
       scope :active, -> { where(active: true) }
       scope :with_agents, -> { includes(:agents) }

@@ -45,7 +45,7 @@ module RcrewAI
           def crew_params
             params.require(:crew).permit(
               :name, :description, :process_type, :verbose,
-              :memory_enabled, :cache_enabled, :max_rpm, :manager_llm, :consensus_agents, :active
+              :cache_enabled, :max_rpm, :manager_llm, :consensus_agents, :active
             )
           end
         end
