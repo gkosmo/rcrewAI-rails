@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RcrewAI Rails — AI agent crews for Rails</title>
-<meta name="description" content="A Rails engine for orchestrating AI agents with ActiveRecord persistence, background jobs, generators, a web dashboard, and full rcrewai 0.7 feature coverage.">
+<title>Capabilities — RcrewAI Rails</title>
+<meta name="description" content="Agent configuration, task output processing, crew orchestration, knowledge (RAG), cognitive memory, and flows — all configured through ActiveRecord.">
 <style>
   :root {
     --crimson: #c4221f;
@@ -143,9 +143,9 @@
   <div class="wrap nav">
     <span class="brand"><span class="dot"></span>RcrewAI&nbsp;Rails</span>
     <nav class="nav-links">
-      <a href="index.html" class="active">Home</a>
+      <a href="index.html">Home</a>
       <a href="getting-started.html">Getting Started</a>
-      <a href="capabilities.html">Capabilities</a>
+      <a href="capabilities.html" class="active">Capabilities</a>
       <a href="examples.html">Examples</a>
       <a href="api.html">API</a>
       <a class="gh" href="https://github.com/gkosmo/rcrewai-rails">GitHub →</a>
@@ -153,95 +153,103 @@
   </div>
 </header>
 
-<section class="hero">
+<section class="page-hero">
   <div class="wrap">
-    <h1>Build AI agent crews,<br><span class="accent">the Rails way.</span></h1>
-    <p class="lead">A Rails engine for orchestrating AI agents — with ActiveRecord persistence, background-job execution, generators, a web dashboard, and full rcrewai 0.7 feature coverage.</p>
-    <div class="install-line"><span class="prompt">gem </span>'rcrewai-rails'</div>
-    <div class="cta">
-      <a class="btn btn-primary" href="getting-started.html">Get Started</a>
-      <a class="btn btn-secondary" href="https://github.com/gkosmo/rcrewai-rails">View on GitHub</a>
-    </div>
+    <h1>Capabilities</h1>
+    <p>The engine tracks rcrewai ~> 0.7. Every capability is configured through columns on the persisted models and forwarded to the core objects at build time — all off/absent by default.</p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>Everything you need</h2>
-    <p class="sub">A batteries-included engine for AI agent orchestration in Rails.</p>
-    <div class="grid">
-      <div class="feature">
-        <span class="ic">🗄️</span>
-        <h3>ActiveRecord Integration</h3>
-        <p>Persist crews, agents, tasks, and executions directly in your database.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">⚙️</span>
-        <h3>Background Jobs</h3>
-        <p>Runs through ActiveJob — works with Sidekiq, Resque, Delayed Job, or any adapter.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🏗️</span>
-        <h3>Rails Generators</h3>
-        <p>Scaffold new crews and agents from the command line in seconds.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">📊</span>
-        <h3>Web Dashboard</h3>
-        <p>Monitor executions, view logs, and manage crews through a built-in UI.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🤖</span>
-        <h3>Multi-LLM Support</h3>
-        <p>OpenAI GPT, Anthropic Claude, Google Gemini, Azure OpenAI, and Ollama.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🧰</span>
-        <h3>Rails-Specific Tools</h3>
-        <p>Pre-built tools for ActiveRecord, ActionMailer, the Rails cache, and more.</p>
-      </div>
-    </div>
+    <h2>Agent configuration</h2>
+    <p class="sub">Columns on an Agent that shape how it thinks and calls the LLM.</p>
+    <table>
+      <thead><tr><th>Column</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>max_rpm</code></td><td>Rate-limit the agent's LLM calls (requests/minute).</td></tr>
+        <tr><td><code>reasoning</code> / <code>max_reasoning_attempts</code></td><td>Run a reasoning pass before answering.</td></tr>
+        <tr><td><code>respect_context_window</code></td><td>Trim history to fit the model's context window.</td></tr>
+        <tr><td><code>llm_config</code> (JSON)</td><td>Per-agent LLM override.</td></tr>
+        <tr><td><code>memory_enabled</code> + <code>memory_scope</code> + <code>memory_short_term_limit</code></td><td>Enable cognitive memory.</td></tr>
+      </tbody>
+    </table>
+    <pre>agent = crew.agents.create!(
+  name: "researcher", role: "Researcher", goal: "Find facts",
+  reasoning: true,
+  max_rpm: 30,
+  llm_config: { provider: "anthropic", model: "claude-sonnet-5" },
+  memory_enabled: true, memory_scope: "research", memory_short_term_limit: 20
+)</pre>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>What's new <span class="badge">0.4 – 0.7</span></h2>
-    <p class="sub">Full parity with rcrewai 0.4–0.7, surfaced through ActiveRecord.</p>
-    <div class="whatsnew">
-      <div class="wn-item">
-        <h4>Agent intelligence</h4>
-        <p>Reasoning passes, per-agent LLM overrides, rate limiting, context-window trimming, and cognitive memory.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Task output</h4>
-        <p>Structured output schemas, guardrails, file output, and multimodal image attachments.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Crew orchestration</h4>
-        <p>before/after kickoff hooks, planning, the consensual process, and batch execution.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Knowledge (RAG)</h4>
-        <p>String, file, PDF, CSV, and URL sources attached to agents or crews.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Flows</h4>
-        <p>Persist and resume rcrewai Flow state through the database; track each run.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Cognitive memory</h4>
-        <p>Semantic recall with a pluggable embedder and SQLite-backed store.</p>
-      </div>
-    </div>
+    <h2>Task output processing</h2>
+    <p class="sub">Columns on a Task that validate, transform, and route its output.</p>
+    <table>
+      <thead><tr><th>Column</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>output_schema</code> (JSON)</td><td>Validate/coerce the result against a JSON schema.</td></tr>
+        <tr><td><code>guardrail_class</code> + <code>guardrail_method_name</code> + <code>guardrail_max_retries</code></td><td>Validate/transform output with retries.</td></tr>
+        <tr><td><code>output_file</code> + <code>create_directory</code> + <code>markdown</code></td><td>Write the result to disk.</td></tr>
+        <tr><td><code>attachments</code> (JSON)</td><td>Multimodal image inputs.</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">A guardrail is resolved from a host class: guardrail_class names a class whose guardrail_method_name accepts the output and returns [ok, value_or_error].</p>
   </div>
 </section>
 
 <section>
-  <div class="wrap" style="text-align:center;">
-    <h2>Ready to build?</h2>
-    <p class="sub">Install the engine and run your first crew in minutes.</p>
-    <a class="btn btn-primary" href="getting-started.html">Get Started →</a>
+  <div class="wrap">
+    <h2>Crew orchestration</h2>
+    <p class="sub">Columns on a Crew that control process, planning, and lifecycle hooks.</p>
+    <table>
+      <thead><tr><th>Column</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>process_type</code></td><td>"sequential", "hierarchical", or "consensual".</td></tr>
+        <tr><td><code>consensus_agents</code></td><td>Number of proposers for the consensual process (default 3).</td></tr>
+        <tr><td><code>planning</code> / <code>planning_llm</code></td><td>Run a planner pass before execution.</td></tr>
+        <tr><td><code>before_kickoff_class</code>/<code>_method</code>, <code>after_kickoff_class</code>/<code>_method</code></td><td>Lifecycle hooks resolved from host classes.</td></tr>
+      </tbody>
+    </table>
+    <pre>result = crew.execute_batch_sync([{ topic: "a" }, { topic: "b" }])
+crew.batch_executions(result[:batch_id])  # the runs, in order
+crew.execute_batch_async(inputs_list)      # enqueue N jobs, returns the batch_id</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Knowledge (RAG)</h2>
+    <p>Attach sources to an agent (role-specific) or a crew (shared with all its agents):</p>
+    <pre>agent.knowledge_sources.create!(source_type: "url",    value: "https://example.com/doc")
+crew.knowledge_sources.create!(source_type: "string", value: "Reference text…")
+# source_type: "string" | "file" | "pdf" | "csv" | "url"</pre>
+    <p>Active sources are embedded lazily at execution using the configured embedder.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Cognitive memory</h2>
+    <p>Set memory_enabled: true on an agent to turn on semantic memory. Configure the embedder and store once in the initializer:</p>
+    <pre>RcrewAI::Rails.configure do |config|
+  config.default_memory_embedder = RCrewAI::Knowledge::Embedder.new
+  config.default_memory_store = RCrewAI::Memory::SqliteStore.new(path: "db/rcrewai_memory.sqlite3")
+end</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Flows</h2>
+    <p>Define Flow subclasses in your app; the engine persists their state and tracks runs.</p>
+    <pre>run = RcrewAI::Rails::FlowRun.execute(MyFlow, inputs: { topic: "ruby" })
+run.status   # "completed" / "failed"
+run.result   # the final flow state
+RcrewAI::Rails::FlowState.find_by(state_id: run.state_id)  # the persisted state</pre>
   </div>
 </section>
 

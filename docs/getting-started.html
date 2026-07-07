@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RcrewAI Rails — AI agent crews for Rails</title>
-<meta name="description" content="A Rails engine for orchestrating AI agents with ActiveRecord persistence, background jobs, generators, a web dashboard, and full rcrewai 0.7 feature coverage.">
+<title>Getting Started — RcrewAI Rails</title>
+<meta name="description" content="Install the RcrewAI Rails engine, configure it, and run your first AI agent crew.">
 <style>
   :root {
     --crimson: #c4221f;
@@ -143,8 +143,8 @@
   <div class="wrap nav">
     <span class="brand"><span class="dot"></span>RcrewAI&nbsp;Rails</span>
     <nav class="nav-links">
-      <a href="index.html" class="active">Home</a>
-      <a href="getting-started.html">Getting Started</a>
+      <a href="index.html">Home</a>
+      <a href="getting-started.html" class="active">Getting Started</a>
       <a href="capabilities.html">Capabilities</a>
       <a href="examples.html">Examples</a>
       <a href="api.html">API</a>
@@ -153,95 +153,110 @@
   </div>
 </header>
 
-<section class="hero">
+<section class="page-hero">
   <div class="wrap">
-    <h1>Build AI agent crews,<br><span class="accent">the Rails way.</span></h1>
-    <p class="lead">A Rails engine for orchestrating AI agents — with ActiveRecord persistence, background-job execution, generators, a web dashboard, and full rcrewai 0.7 feature coverage.</p>
-    <div class="install-line"><span class="prompt">gem </span>'rcrewai-rails'</div>
-    <div class="cta">
-      <a class="btn btn-primary" href="getting-started.html">Get Started</a>
-      <a class="btn btn-secondary" href="https://github.com/gkosmo/rcrewai-rails">View on GitHub</a>
-    </div>
+    <h1>Getting Started</h1>
+    <p>Install the engine, configure it, and run your first crew.</p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>Everything you need</h2>
-    <p class="sub">A batteries-included engine for AI agent orchestration in Rails.</p>
-    <div class="grid">
-      <div class="feature">
-        <span class="ic">🗄️</span>
-        <h3>ActiveRecord Integration</h3>
-        <p>Persist crews, agents, tasks, and executions directly in your database.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">⚙️</span>
-        <h3>Background Jobs</h3>
-        <p>Runs through ActiveJob — works with Sidekiq, Resque, Delayed Job, or any adapter.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🏗️</span>
-        <h3>Rails Generators</h3>
-        <p>Scaffold new crews and agents from the command line in seconds.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">📊</span>
-        <h3>Web Dashboard</h3>
-        <p>Monitor executions, view logs, and manage crews through a built-in UI.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🤖</span>
-        <h3>Multi-LLM Support</h3>
-        <p>OpenAI GPT, Anthropic Claude, Google Gemini, Azure OpenAI, and Ollama.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🧰</span>
-        <h3>Rails-Specific Tools</h3>
-        <p>Pre-built tools for ActiveRecord, ActionMailer, the Rails cache, and more.</p>
-      </div>
-    </div>
+    <h2>Installation</h2>
+    <p class="sub">Three steps to get the engine running in your app.</p>
+
+    <h3>1. Add to your Gemfile</h3>
+    <pre>gem 'rcrewai-rails'</pre>
+    <pre>$ bundle install</pre>
+
+    <h3>2. Run the install generator</h3>
+    <pre>$ rails generate rcrewai:rails:install
+$ rails db:migrate</pre>
+    <p class="caption">Creates the migrations, adds a configuration initializer, and mounts the engine routes.</p>
+
+    <h3>3. Manual route setup</h3>
+    <pre>Rails.application.routes.draw do
+  mount RcrewAI::Rails::Engine => '/rcrewai'
+end</pre>
+    <p class="caption">The web UI is then at /rcrewai and the API at /rcrewai/api/v1/.</p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>What's new <span class="badge">0.4 – 0.7</span></h2>
-    <p class="sub">Full parity with rcrewai 0.4–0.7, surfaced through ActiveRecord.</p>
-    <div class="whatsnew">
-      <div class="wn-item">
-        <h4>Agent intelligence</h4>
-        <p>Reasoning passes, per-agent LLM overrides, rate limiting, context-window trimming, and cognitive memory.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Task output</h4>
-        <p>Structured output schemas, guardrails, file output, and multimodal image attachments.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Crew orchestration</h4>
-        <p>before/after kickoff hooks, planning, the consensual process, and batch execution.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Knowledge (RAG)</h4>
-        <p>String, file, PDF, CSV, and URL sources attached to agents or crews.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Flows</h4>
-        <p>Persist and resume rcrewai Flow state through the database; track each run.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Cognitive memory</h4>
-        <p>Semantic recall with a pluggable embedder and SQLite-backed store.</p>
-      </div>
-    </div>
+    <h2>Configuration</h2>
+    <p class="sub">Configure the engine and the base RcrewAI gem in an initializer.</p>
+    <pre>RcrewAI::Rails.configure do |config|
+  config.job_queue_name = "default"
+  config.enable_web_ui = true
+  config.async_execution = true
+  config.default_llm_provider = "openai"
+  config.default_llm_model = "gpt-4"
+
+  # Objects for agent memory (optional)
+  config.default_memory_embedder = RCrewAI::Knowledge::Embedder.new
+  config.default_memory_store = RCrewAI::Memory::SqliteStore.new(path: "db/rcrewai_memory.sqlite3")
+end
+
+# Configure the base RcrewAI gem
+RcrewAI.configure do |config|
+  config.openai_api_key = ENV["OPENAI_API_KEY"]
+end</pre>
   </div>
 </section>
 
 <section>
-  <div class="wrap" style="text-align:center;">
-    <h2>Ready to build?</h2>
-    <p class="sub">Install the engine and run your first crew in minutes.</p>
-    <a class="btn btn-primary" href="getting-started.html">Get Started →</a>
+  <div class="wrap">
+    <h2>Your first crew</h2>
+    <p class="sub">Generate a crew, define it in Ruby, and run it.</p>
+
+    <h3>Generate a crew</h3>
+    <pre>$ rails generate rcrewai:rails:crew research_team sequential \
+    --agents researcher analyst writer \
+    --description "Research team for market analysis"</pre>
+    <p class="caption">Creates a crew class in app/crews/research_team_crew.rb.</p>
+
+    <h3>Define a crew programmatically</h3>
+    <pre>class ResearchCrew
+  include RcrewAI::Rails::CrewBuilder
+
+  crew_name "research_team"
+  crew_description "AI-powered research team"
+  process_type :sequential # :sequential, :hierarchical, or :consensual
+
+  def setup_agents
+    @researcher = create_agent("researcher",
+      role: "Senior Research Analyst",
+      goal: "Uncover insights and trends",
+      backstory: "Expert researcher with years of experience"
+    )
+    @writer = create_agent("writer",
+      role: "Content Writer",
+      goal: "Create compelling reports",
+      backstory: "Skilled writer specializing in technical content"
+    )
+  end
+
+  def setup_tasks
+    @research_task = create_task("Research latest AI trends",
+      expected_output: "Comprehensive research report",
+      position: 1
+    )
+    assign_agent_to_task(@researcher, @research_task)
+
+    @writing_task = create_task("Write executive summary",
+      expected_output: "2-page executive summary",
+      position: 2
+    )
+    assign_agent_to_task(@writer, @writing_task)
+    add_task_dependency(@writing_task, @research_task)
+  end
+end</pre>
+
+    <h3>Run it</h3>
+    <pre>crew = ResearchCrew.new
+execution = crew.execute(topic: "AI in Healthcare")   # async via ActiveJob by default
+crew.execute_sync(topic: "AI in Healthcare")           # or run synchronously</pre>
   </div>
 </section>
 

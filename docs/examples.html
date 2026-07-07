@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RcrewAI Rails — AI agent crews for Rails</title>
-<meta name="description" content="A Rails engine for orchestrating AI agents with ActiveRecord persistence, background jobs, generators, a web dashboard, and full rcrewai 0.7 feature coverage.">
+<title>Examples — RcrewAI Rails</title>
+<meta name="description" content="End-to-end recipes: batch execution, guardrailed tasks, knowledge-backed agents, persisted flows, and consensual crews.">
 <style>
   :root {
     --crimson: #c4221f;
@@ -143,105 +143,102 @@
   <div class="wrap nav">
     <span class="brand"><span class="dot"></span>RcrewAI&nbsp;Rails</span>
     <nav class="nav-links">
-      <a href="index.html" class="active">Home</a>
+      <a href="index.html">Home</a>
       <a href="getting-started.html">Getting Started</a>
       <a href="capabilities.html">Capabilities</a>
-      <a href="examples.html">Examples</a>
+      <a href="examples.html" class="active">Examples</a>
       <a href="api.html">API</a>
       <a class="gh" href="https://github.com/gkosmo/rcrewai-rails">GitHub →</a>
     </nav>
   </div>
 </header>
 
-<section class="hero">
+<section class="page-hero">
   <div class="wrap">
-    <h1>Build AI agent crews,<br><span class="accent">the Rails way.</span></h1>
-    <p class="lead">A Rails engine for orchestrating AI agents — with ActiveRecord persistence, background-job execution, generators, a web dashboard, and full rcrewai 0.7 feature coverage.</p>
-    <div class="install-line"><span class="prompt">gem </span>'rcrewai-rails'</div>
-    <div class="cta">
-      <a class="btn btn-primary" href="getting-started.html">Get Started</a>
-      <a class="btn btn-secondary" href="https://github.com/gkosmo/rcrewai-rails">View on GitHub</a>
-    </div>
+    <h1>Examples</h1>
+    <p>End-to-end recipes for the most common patterns.</p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>Everything you need</h2>
-    <p class="sub">A batteries-included engine for AI agent orchestration in Rails.</p>
-    <div class="grid">
-      <div class="feature">
-        <span class="ic">🗄️</span>
-        <h3>ActiveRecord Integration</h3>
-        <p>Persist crews, agents, tasks, and executions directly in your database.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">⚙️</span>
-        <h3>Background Jobs</h3>
-        <p>Runs through ActiveJob — works with Sidekiq, Resque, Delayed Job, or any adapter.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🏗️</span>
-        <h3>Rails Generators</h3>
-        <p>Scaffold new crews and agents from the command line in seconds.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">📊</span>
-        <h3>Web Dashboard</h3>
-        <p>Monitor executions, view logs, and manage crews through a built-in UI.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🤖</span>
-        <h3>Multi-LLM Support</h3>
-        <p>OpenAI GPT, Anthropic Claude, Google Gemini, Azure OpenAI, and Ollama.</p>
-      </div>
-      <div class="feature">
-        <span class="ic">🧰</span>
-        <h3>Rails-Specific Tools</h3>
-        <p>Pre-built tools for ActiveRecord, ActionMailer, the Rails cache, and more.</p>
-      </div>
-    </div>
+    <h2>Batch execution</h2>
+    <p>Run a crew once per input set; each input becomes its own Execution, grouped by a shared batch_id.</p>
+    <pre>crew = RcrewAI::Rails::Crew.find_by(name: "research_team")
+
+result = crew.execute_batch_sync([
+  { topic: "AI in healthcare" },
+  { topic: "AI in finance" }
+])
+
+result[:batch_id]                        # shared id for the batch
+crew.batch_executions(result[:batch_id]) # the two Executions, in order</pre>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <h2>What's new <span class="badge">0.4 – 0.7</span></h2>
-    <p class="sub">Full parity with rcrewai 0.4–0.7, surfaced through ActiveRecord.</p>
-    <div class="whatsnew">
-      <div class="wn-item">
-        <h4>Agent intelligence</h4>
-        <p>Reasoning passes, per-agent LLM overrides, rate limiting, context-window trimming, and cognitive memory.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Task output</h4>
-        <p>Structured output schemas, guardrails, file output, and multimodal image attachments.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Crew orchestration</h4>
-        <p>before/after kickoff hooks, planning, the consensual process, and batch execution.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Knowledge (RAG)</h4>
-        <p>String, file, PDF, CSV, and URL sources attached to agents or crews.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Flows</h4>
-        <p>Persist and resume rcrewai Flow state through the database; track each run.</p>
-      </div>
-      <div class="wn-item">
-        <h4>Cognitive memory</h4>
-        <p>Semantic recall with a pluggable embedder and SQLite-backed store.</p>
-      </div>
-    </div>
+    <h2>A guardrailed task</h2>
+    <p>Validate and transform a task's output with a host class.</p>
+    <pre>class JsonGuardrail
+  # Must return [ok, value_or_error]
+  def validate(output)
+    parsed = JSON.parse(output)
+    [true, parsed]
+  rescue JSON::ParserError => e
+    [false, "Invalid JSON: #{e.message}"]
+  end
+end
+
+task = crew.tasks.create!(
+  description: "Return the result as JSON",
+  expected_output: "A JSON object",
+  guardrail_class: "JsonGuardrail",
+  guardrail_method_name: "validate",
+  guardrail_max_retries: 3
+)</pre>
   </div>
 </section>
 
 <section>
-  <div class="wrap" style="text-align:center;">
-    <h2>Ready to build?</h2>
-    <p class="sub">Install the engine and run your first crew in minutes.</p>
-    <a class="btn btn-primary" href="getting-started.html">Get Started →</a>
+  <div class="wrap">
+    <h2>Knowledge-backed agent</h2>
+    <p>Give an agent reference material to draw on.</p>
+    <pre>agent = crew.agents.create!(name: "analyst", role: "Analyst", goal: "Answer from the docs")
+agent.knowledge_sources.create!(source_type: "pdf", value: Rails.root.join("docs/handbook.pdf").to_s)
+agent.knowledge_sources.create!(source_type: "url", value: "https://example.com/reference")
+# Sources are embedded lazily when the crew runs.</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>A persisted Flow</h2>
+    <p>Flow subclasses live in your app; the engine persists state and tracks runs.</p>
+    <pre>class OnboardingFlow < RCrewAI::Flow
+  start :greet
+  def greet
+    state.step = "greeted"
+  end
+end
+
+run = RcrewAI::Rails::FlowRun.execute(OnboardingFlow, inputs: { user_id: 42 })
+run.status  # "completed"
+run.result  # { "step" => "greeted", ... }</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>A consensual crew</h2>
+    <p>Have multiple agents propose and vote on each task's answer.</p>
+    <pre>crew = RcrewAI::Rails::Crew.create!(
+  name: "review_board",
+  process_type: "consensual",
+  consensus_agents: 3
+)
+# add agents + tasks as usual, then:
+crew.execute_sync</pre>
   </div>
 </section>
 
