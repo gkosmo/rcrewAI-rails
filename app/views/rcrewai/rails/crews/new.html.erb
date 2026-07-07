@@ -31,7 +31,8 @@
       <%= form.select :process_type, 
           options_for_select([
             ['Sequential', 'sequential'],
-            ['Hierarchical', 'hierarchical']
+            ['Hierarchical', 'hierarchical'],
+            ['Consensual', 'consensual']
           ], @crew.process_type), 
           { prompt: 'Select process type' }, 
           { class: "form-select" } %>

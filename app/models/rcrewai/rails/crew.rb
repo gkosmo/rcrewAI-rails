@@ -9,7 +9,7 @@ module RcrewAI
       has_many :knowledge_sources, as: :owner, class_name: "RcrewAI::Rails::KnowledgeSource", dependent: :destroy
 
       validates :name, presence: true
-      validates :process_type, inclusion: { in: %w[sequential hierarchical] }
+      validates :process_type, inclusion: { in: %w[sequential hierarchical consensual] }
 
       serialize :config, coder: JSON
       serialize :memory, coder: JSON
@@ -37,14 +37,16 @@ module RcrewAI
         crew
       end
 
-      # rcrewai 0.5.0 planning options. Emit a key only when meaningfully set, so
-      # an all-default crew constructs exactly as it did before.
+      # Crew construction options (planning, consensus_agents, knowledge). Emit a
+      # key only when meaningfully set, so an all-default crew constructs exactly
+      # as it did before.
       def crew_planning_options
         opts = {}
         opts[:planning] = planning if planning
         opts[:planning_llm] = planning_llm.to_sym if planning_llm.present?
         sources = rcrew_knowledge_sources
         opts[:knowledge_sources] = sources if sources.any?
+        opts[:consensus_agents] = consensus_agents if consensus_agents.present?
         opts
       end
 

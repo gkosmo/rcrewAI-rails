@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Support the rcrewai 0.7.0 `:consensual` crew process: `process_type:
+  "consensual"` is now valid, a nullable `consensus_agents` column is forwarded to
+  the core crew (defaulting to the core's 3 when unset), and the web UI + API
+  permit it. Existing sequential/hierarchical crews are unaffected.
+
+### Changed
+- Require `rcrewai ~> 0.7` (was `~> 0.5`).
+
 ## [0.5.1] - 2026-07-06
 
 ### Fixed

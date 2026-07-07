@@ -228,4 +228,38 @@ RSpec.describe RcrewAI::Rails::Crew, type: :model do
       expect(captured[:knowledge_sources].length).to eq(1)
     end
   end
+
+  describe "consensual process" do
+    it "accepts the consensual process_type" do
+      crew = RcrewAI::Rails::Crew.new(name: "C", process_type: "consensual")
+      expect(crew).to be_valid
+    end
+
+    it "still rejects an unknown process_type" do
+      crew = RcrewAI::Rails::Crew.new(name: "C", process_type: "bogus")
+      expect(crew).not_to be_valid
+    end
+
+    it "forwards consensus_agents when set" do
+      c = RcrewAI::Rails::Crew.create!(name: "C", process_type: "consensual", consensus_agents: 5)
+      captured = nil
+      allow(RCrewAI::Crew).to receive(:new).and_wrap_original do |orig, name, **kwargs|
+        captured = kwargs
+        orig.call(name, **kwargs)
+      end
+      c.to_rcrew
+      expect(captured[:consensus_agents]).to eq(5)
+    end
+
+    it "does not forward consensus_agents when nil" do
+      c = RcrewAI::Rails::Crew.create!(name: "C", process_type: "sequential")
+      captured = nil
+      allow(RCrewAI::Crew).to receive(:new).and_wrap_original do |orig, name, **kwargs|
+        captured = kwargs
+        orig.call(name, **kwargs)
+      end
+      c.to_rcrew
+      expect(captured).not_to have_key(:consensus_agents)
+    end
+  end
 end
