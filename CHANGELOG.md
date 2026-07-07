@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-07
+
+### Fixed
+- Refresh the README for rcrewai 0.7: corrected the install-generator namespace
+  (`rcrewai:rails:install`) and removed a broken crew-level `memory_enabled`
+  example (that DSL method no longer exists — memory is agent-level). Added a
+  "rcrewai 0.7 capabilities" section documenting the new agent/task/crew/
+  knowledge/flow configuration. Docs only.
+
 ## [0.6.0] - 2026-07-07
 
 Tracks rcrewai 0.7.0: adds the `:consensual` crew process and agent-level
@@ -114,7 +123,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.4.0...v0.5.0
