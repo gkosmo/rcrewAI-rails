@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-07
+
+Tracks rcrewai 0.7.0: adds the `:consensual` crew process and agent-level
+cognitive memory configuration, and requires `rcrewai ~> 0.7`. Includes a
+schema cleanup that removes unused columns (see Removed + the `009` migration).
+
 ### Added
 - Support the rcrewai 0.7.0 `:consensual` crew process: `process_type:
   "consensual"` is now valid, a nullable `consensus_agents` column is forwarded to
@@ -108,7 +114,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.3.1...v0.4.0
