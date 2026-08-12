@@ -5,6 +5,7 @@ module RcrewAI
       
       belongs_to :crew
       has_many :execution_logs, dependent: :destroy
+      has_many :spans, dependent: :destroy
 
       validates :status, inclusion: { in: %w[pending running completed failed cancelled] }
 
