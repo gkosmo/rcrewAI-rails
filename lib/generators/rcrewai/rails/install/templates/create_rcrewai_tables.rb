@@ -51,6 +51,7 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
 
     create_table :rcrewai_tasks do |t|
       t.references :crew, null: false, foreign_key: { to_table: :rcrewai_crews }
+      t.references :agent, foreign_key: { to_table: :rcrewai_agents }
       t.text :description, null: false
       t.text :expected_output, null: false
       t.boolean :async_execution, default: false
@@ -69,11 +70,14 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.string :callback_class
       t.string :callback_method_name
       t.integer :position
+      t.boolean :active, default: true
+      t.integer :order_index, default: 0
 
       t.timestamps
     end
 
     add_index :rcrewai_tasks, :position
+    add_index :rcrewai_tasks, :active
 
     create_table :rcrewai_task_assignments do |t|
       t.references :task, null: false, foreign_key: { to_table: :rcrewai_tasks }
@@ -128,6 +132,19 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
 
     add_index :rcrewai_execution_logs, :level
     add_index :rcrewai_execution_logs, :timestamp
+
+    create_table :rcrewai_tools do |t|
+      t.references :agent, null: false, foreign_key: { to_table: :rcrewai_agents }
+      t.string :name, null: false
+      t.text :description
+      t.string :tool_class, null: false
+      t.text :config
+      t.boolean :active, default: true
+
+      t.timestamps
+    end
+
+    add_index :rcrewai_tools, :active
 
     create_table :rcrewai_knowledge_sources do |t|
       t.references :owner, polymorphic: true, null: false
