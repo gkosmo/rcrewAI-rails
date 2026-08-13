@@ -36,6 +36,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rcrewai >= 0.7.1` for agent-level tracing. On earlier 0.7.x versions traces
   contain only crew-level spans.
 
+### Upgrading
+- **Existing installs need two new migrations.** Do not run the install
+  generator (it creates every table and will fail on duplicates). Instead run
+  `rails rcrew_ai_rails:install:migrations && rails db:migrate` to copy only
+  what is missing: `010_create_rcrewai_spans` (the trace tree) and
+  `011_add_observation_rollups_to_rcrewai_executions` (cost/token totals). Both
+  are additive — nothing existing is altered or dropped. Observation is enabled
+  by default once the tables exist; set `config.observation_enabled = false` to
+  upgrade without turning tracing on.
+
 ## [0.6.1] - 2026-07-07
 
 ### Fixed
