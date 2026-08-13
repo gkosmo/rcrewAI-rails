@@ -1,4 +1,4 @@
-class AddConfigToRcrewaiAgents < ActiveRecord::Migration[7.0]
+class AddConfigToRcrewAIAgents < ActiveRecord::Migration[7.0]
   def change
     # max_rpm and llm_config already exist on rcrewai_agents from the
     # original create table; only the 0.5.0 additions are new.

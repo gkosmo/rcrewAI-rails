@@ -1,4 +1,4 @@
-class CreateRcrewaiFlows < ActiveRecord::Migration[7.0]
+class CreateRcrewAIFlows < ActiveRecord::Migration[7.0]
   def change
     create_table :rcrewai_flow_states do |t|
       t.string :state_id, null: false

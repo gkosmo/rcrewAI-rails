@@ -54,6 +54,23 @@ RSpec.describe RcrewAI::Rails::Generators::InstallGenerator do
   end
 
   describe "the migration" do
+    # The engine registers an `RcrewAI` acronym inflection, so Rails camelizes
+    # `create_rcrewai_tables` to `CreateRcrewAITables`, not `CreateRcrewaiTables`.
+    # Rails resolves a migration's class from its filename, so a template whose
+    # class name disagrees raises NameError on `rails db:migrate` — which is
+    # exactly what shipped in 0.7.0. Assert the name Rails will actually look
+    # for, derived the same way Rails derives it, rather than hardcoding it.
+    it "declares the class name Rails derives from the filename" do
+      run_generator
+      filename = File.basename(migration_paths.first, ".rb").sub(/\A\d+_/, "")
+      expected = ActiveSupport::Inflector.camelize(filename)
+      declared = File.read(migration_paths.first)[/class (\w+)/, 1]
+
+      expect(declared).to eq(expected),
+                          "Rails will look for #{expected} but the migration declares #{declared}; " \
+                          "`rails db:migrate` would raise NameError"
+    end
+
     it "creates a timestamped migration" do
       run_generator
       expect(migration_paths.size).to eq(1)
@@ -81,10 +98,9 @@ RSpec.describe RcrewAI::Rails::Generators::InstallGenerator do
       end
     end
 
-    it "defines a class name matching the Rails migration filename convention" do
+    it "subclasses ActiveRecord::Migration" do
       run_generator
-      content = File.read(migration_paths.first)
-      expect(content).to include("class CreateRcrewaiTables < ActiveRecord::Migration")
+      expect(File.read(migration_paths.first)).to match(/class \w+ < ActiveRecord::Migration/)
     end
 
     it "is valid Ruby" do

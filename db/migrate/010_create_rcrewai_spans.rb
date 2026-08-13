@@ -1,4 +1,4 @@
-class CreateRcrewaiSpans < ActiveRecord::Migration[7.0]
+class CreateRcrewAISpans < ActiveRecord::Migration[7.0]
   def change
     create_table :rcrewai_spans do |t|
       t.references :execution, null: false, foreign_key: { to_table: :rcrewai_executions }

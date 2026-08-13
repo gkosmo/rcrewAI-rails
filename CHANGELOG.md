@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-13
+
+### Fixed
+- **`rails db:migrate` raised `NameError` on 0.7.0.** The engine registers an
+  `RcrewAI` acronym inflection (Zeitwerk needs it to resolve
+  `rcrewai/rails/span.rb` to `RcrewAI::Rails::Span`), so Rails camelizes
+  `create_rcrewai_tables` to `CreateRcrewAITables` — but the shipped migrations
+  declared `CreateRcrewaiTables`. Rails resolves a migration's class from its
+  filename, so following the documented install verbatim failed. Nine migrations
+  in `db/migrate` and the install template were affected; all now declare the
+  name Rails derives. Thanks to the user who reported this from a real install.
+
+  **If you already installed 0.7.0** and renamed the class by hand, no action is
+  needed — your migration works. Otherwise, delete the copied migration, upgrade,
+  and re-run the install (or `rcrew_ai_rails:install:migrations`).
+
 ## [0.7.0] - 2026-08-13
 
 ### Added
@@ -162,7 +178,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.1...v0.6.0
