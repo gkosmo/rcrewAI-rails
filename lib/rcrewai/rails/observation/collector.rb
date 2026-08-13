@@ -63,9 +63,13 @@ module RcrewAI
         # Closes anything still open. Called when the run ends, so a crash
         # mid-span does not leave the tree permanently "running".
         def finish!
-          @stack.open_span_ids.each { |id| close_span(id, status: "error") }
+          @stack.open_span_ids.compact.each { |id| close_span(id, status: "error") }
           @agent_spans.each_value { |id| close_span(id, status: "error") }
           @agent_spans.clear
+          # Deltas accumulate per agent and are normally freed by TextDone.
+          # A stream that aborts mid-generation never sends one, so drop
+          # anything left rather than retaining the whole generated text.
+          @text_buffers.clear
           @writer.flush!
         end
 
@@ -135,17 +139,21 @@ module RcrewAI
         def on_text_delta(event)
           return if config.observation_capture_prompts == :none
 
-          @text_buffers[event.agent.to_s] << event.text.to_s
+          @text_buffers[SpanStack.key_for(event.agent)] << event.text.to_s
         end
 
+        # Prefers the event's own text, falling back to the accumulated
+        # deltas when the provider sends TextDone without a payload.
         def on_text_done(event)
-          @text_buffers.delete(event.agent.to_s)
+          buffered = @text_buffers.delete(SpanStack.key_for(event.agent))
           return if config.observation_capture_prompts == :none
 
           id = @stack.current(agent: event.agent)
           return unless id
 
-          merge_attributes(id, "text" => truncate(event.text.to_s))
+          text = event.text.to_s
+          text = buffered.to_s if text.empty?
+          merge_attributes(id, "text" => truncate(text))
         end
 
         def on_thinking(event)
@@ -181,7 +189,7 @@ module RcrewAI
             attributes_json: JSON.generate(attrs),
             created_at: Time.current,
             updated_at: Time.current
-          ).tap { Rollup.record_span(@execution) }
+          ).tap { |id| Rollup.record_span(@execution) if id }
         end
 
         def close_span(span_id, status:)
@@ -202,11 +210,16 @@ module RcrewAI
           @writer.update_span(span_id, attributes_json: JSON.generate(span.attributes_hash.merge(hash)))
         end
 
+        # Truncates to a byte cap without splitting a multi-byte character.
+        # A bare byteslice can leave an invalid UTF-8 tail, which makes
+        # JSON.generate raise and costs us the whole attribute.
         def truncate(text)
           return text if config.observation_capture_prompts == :full
 
           max = config.observation_prompt_max_bytes
-          text.bytesize <= max ? text : text.byteslice(0, max)
+          return text if text.bytesize <= max
+
+          text.byteslice(0, max).scrub("")
         end
 
         def warn_failure(error)

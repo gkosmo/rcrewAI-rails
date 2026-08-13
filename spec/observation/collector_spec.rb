@@ -144,6 +144,55 @@ RSpec.describe RcrewAI::Rails::Observation::Collector do
     it "never raises on an unrecognised event" do
       expect { collector.call(Struct.new(:type).new(:mystery)) }.not_to raise_error
     end
+
+    it "releases accumulated text buffers when the run finishes" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1, iteration_index: 1))
+      50.times { collector.call(event(RCrewAI::Events::TextDelta, agent: "writer", iteration: 1, text: "tok")) }
+      collector.finish!
+      buffers = collector.instance_variable_get(:@text_buffers)
+      expect(buffers).to be_empty
+    end
+  end
+
+  describe "multi-byte text" do
+    before do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1, iteration_index: 1))
+      allow(RcrewAI::Rails.config).to receive(:observation_prompt_max_bytes).and_return(5)
+    end
+
+    it "still stores text when the cap splits a multi-byte character" do
+      collector.call(event(RCrewAI::Events::TextDone, agent: "writer", iteration: 1, text: "日本語テキスト"))
+      attrs = execution.spans.llm_calls.first.reload.attributes_hash
+      expect(attrs).to have_key("text")
+      expect(attrs["text"]).to eq("日")
+    end
+
+    it "stores valid UTF-8 when the cap splits an emoji" do
+      collector.call(event(RCrewAI::Events::TextDone, agent: "writer", iteration: 1, text: "abc🎉def"))
+      text = execution.spans.llm_calls.first.reload.attributes_hash["text"]
+      expect(text).to eq("abc")
+      expect(text.valid_encoding?).to be(true)
+    end
+  end
+
+  describe "text buffer fallback" do
+    before do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1, iteration_index: 1))
+    end
+
+    it "falls back to accumulated deltas when TextDone carries no text" do
+      %w[hel lo\  wor ld].each do |chunk|
+        collector.call(event(RCrewAI::Events::TextDelta, agent: "writer", iteration: 1, text: chunk))
+      end
+      collector.call(event(RCrewAI::Events::TextDone, agent: "writer", iteration: 1, text: ""))
+      expect(execution.spans.llm_calls.first.reload.attributes_hash["text"]).to eq("hello world")
+    end
+
+    it "prefers the event text when both are present" do
+      collector.call(event(RCrewAI::Events::TextDelta, agent: "writer", iteration: 1, text: "partial"))
+      collector.call(event(RCrewAI::Events::TextDone, agent: "writer", iteration: 1, text: "final"))
+      expect(execution.spans.llm_calls.first.reload.attributes_hash["text"]).to eq("final")
+    end
   end
 
   describe "agent spans" do
