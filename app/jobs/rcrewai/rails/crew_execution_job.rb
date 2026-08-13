@@ -11,6 +11,7 @@ module RcrewAI
           inputs: inputs,
           batch_id: batch_id
         )
+        collector = nil
 
         begin
           execution.start!
@@ -18,7 +19,13 @@ module RcrewAI
 
           rcrew = crew.to_rcrew
 
-          result = rcrew.execute(stream: stream_sink_for(execution))
+          collector = collector_for(execution)
+          root_span_id = collector&.start_agent_span(agent_name: crew.name)
+
+          result = rcrew.execute(stream: collector)
+
+          collector&.finish_agent_span(agent_name: crew.name) if root_span_id
+          collector&.finish!
 
           execution.complete!(result)
           execution.log("info", "Crew execution completed", { result: result })
@@ -27,6 +34,7 @@ module RcrewAI
 
           result
         rescue => e
+          collector&.finish!
           execution.fail!(e)
           execution.log("error", "Crew execution failed", {
             error: e.message,
@@ -39,34 +47,12 @@ module RcrewAI
 
       private
 
-      # Build a stream sink that translates rcrewai events into ExecutionLog rows.
-      # Note: the gem currently builds the sink but does not yet thread it down
-      # to per-agent execution, so this is wired up for forward-compatibility.
-      def stream_sink_for(execution)
-        lambda do |event|
-          case event
-          when RCrewAI::Events::IterationStart
-            execution.log("debug", "Iteration #{event.iteration_index} start", { agent: event.agent })
-          when RCrewAI::Events::IterationEnd
-            execution.log("debug", "Iteration end", { agent: event.agent, finish_reason: event.finish_reason })
-          when RCrewAI::Events::ToolCallStart
-            execution.log("info", "Tool call: #{event.tool}", { args: event.args, agent: event.agent })
-          when RCrewAI::Events::ToolCallResult
-            execution.log("info", "Tool result: #{event.tool}", { duration_ms: event.duration_ms, agent: event.agent })
-          when RCrewAI::Events::ToolCallError
-            execution.log("error", "Tool error: #{event.tool}", { error: event.error, agent: event.agent })
-          when RCrewAI::Events::Usage
-            execution.log("debug", "Usage", {
-              prompt_tokens: event.prompt_tokens,
-              completion_tokens: event.completion_tokens,
-              total_tokens: event.total_tokens,
-              cost_usd: event.cost_usd,
-              agent: event.agent
-            })
-          when RCrewAI::Events::Error
-            execution.log("error", "Crew error", { error: event.error, agent: event.agent })
-          end
-        end
+      # Translates rcrewai events into the span tree. Returns nil when
+      # observation is disabled so no sink is attached at all.
+      def collector_for(execution)
+        return nil unless RcrewAI::Rails.config.observation_enabled
+
+        RcrewAI::Rails::Observation::Collector.new(execution: execution)
       end
 
       def notify_completion(crew, execution, result)

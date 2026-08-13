@@ -58,4 +58,33 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
     execution = crew.executions.order(:id).last
     expect(execution.batch_id).to be_nil
   end
+
+  describe "observation" do
+    def build_observable_crew(name)
+      observed = RcrewAI::Rails::Crew.create!(name: name, process_type: "sequential")
+      agent = observed.agents.create!(name: "writer", role: "Writer", goal: "Write", backstory: "A writer")
+      observed.tasks.create!(description: "Write a line", expected_output: "A line", agent: agent)
+      observed
+    end
+
+    it "records spans for the execution" do
+      crew = build_observable_crew("observed")
+      described_class.perform_now(crew, {})
+      execution = crew.executions.order(:created_at).last
+      expect(execution.spans.count).to be > 0
+    end
+
+    it "writes no spans when observation is disabled" do
+      allow(RcrewAI::Rails.config).to receive(:observation_enabled).and_return(false)
+      crew = build_observable_crew("unobserved")
+      described_class.perform_now(crew, {})
+      expect(crew.executions.order(:created_at).last.spans.count).to eq(0)
+    end
+
+    it "leaves no spans running after the job finishes" do
+      crew = build_observable_crew("closed")
+      described_class.perform_now(crew, {})
+      expect(crew.executions.order(:created_at).last.spans.running.count).to eq(0)
+    end
+  end
 end
