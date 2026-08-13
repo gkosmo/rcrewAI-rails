@@ -86,6 +86,40 @@ This will:
 - Add an initializer file for configuration
 - Mount the engine routes in `config/routes.rb`
 
+### Upgrading an existing install
+
+The install generator above is for **new** installs — it creates every table, so
+running it against an app that already has the RcrewAI tables will fail on
+duplicates.
+
+If you are already running rcrewai-rails, pull in only the migrations you are
+missing using the standard Rails engine task:
+
+```bash
+$ rails rcrew_ai_rails:install:migrations
+$ rails db:migrate
+```
+
+(The task name comes from the engine's railtie name, `rcrew_ai_rails`.)
+
+Rails copies only the migrations your app does not already have. Upgrading to
+0.7.0 from 0.6.x adds two:
+
+| Migration | Purpose |
+|---|---|
+| `010_create_rcrewai_spans` | `rcrewai_spans` and `rcrewai_span_events` — the observation engine's trace tree |
+| `011_add_observation_rollups_to_rcrewai_executions` | `total_cost_usd`, `total_tokens`, `span_count`, `error_count` on executions |
+
+Both are additive: no existing column or table is changed, and nothing is
+dropped. Existing crews, agents, tasks, and executions are unaffected, and
+observation is enabled by default once the tables exist. To upgrade the gem
+without turning tracing on, set `config.observation_enabled = false` in
+`config/initializers/rcrewai.rb` before migrating.
+
+If your schema was created by hand (the install generator did not copy a
+migration before 0.7.0, so this is likely), review the copied migrations before
+running `db:migrate` and delete any whose tables you already have.
+
 ### Manual Routes Setup
 
 If you need to mount the routes manually, add this to your `config/routes.rb`:
