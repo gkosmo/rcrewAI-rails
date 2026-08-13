@@ -16,6 +16,50 @@ Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewai-rails) 
   - Crew: `before_kickoff`/`after_kickoff` hooks, planning, the `consensual` process, batch execution
   - Knowledge (RAG) sources and Flow persistence
 
+## Observation Engine
+
+Every crew execution is traced as a tree of spans — crew, agent, task, LLM call, and
+tool call — carrying timings, token counts, and cost.
+
+- **Trace view** at `/rcrewai/executions/:id/observation`: a waterfall of the run, with
+  prompts, tool arguments, and errors on each span.
+- **Cost and performance** at `/rcrewai/observations/costs`: spend and token totals
+  across recent executions.
+- **Live monitoring**: the trace view updates over Turbo Streams while a run is in progress.
+
+Configure it in `config/initializers/rcrewai.rb`:
+
+```ruby
+config.observation_enabled = true
+config.observation_capture_prompts = :truncated  # :none | :truncated | :full
+config.observation_prompt_max_bytes = 4_096
+config.observation_flush_mode = :batched         # :batched | :immediate
+config.observation_retention_days = 30
+```
+
+Prompt text is truncated by default: full prompts can be large and may contain personal
+data. Set `:full` only when you need lossless replay.
+
+Prune old spans with the bundled rake task:
+
+```bash
+rake rcrewai:observation:prune        # uses observation_retention_days
+rake rcrewai:observation:prune DAYS=7
+```
+
+### Limitations
+
+Token and cost data depend on rcrewai's **streaming** execution path. `Usage` events are
+only emitted when an agent runs via `ToolRunner`, which passes a `stream:` to the LLM
+client — not via `LegacyReactRunner`, which does not. `ToolRunner` is selected when the
+tools have JSON schemas **and** the LLM client reports `supports_native_tools?`. OpenAI,
+Anthropic, and Google all report true, so cost capture works normally with them. With a
+provider or configuration that falls back to `LegacyReactRunner` (for example Ollama
+without native tools), **the cost dashboard will be empty rather than showing an error**.
+
+Agent-level tracing requires **rcrewai >= 0.7.1**, the version that threads the event
+stream down to agent execution. On earlier versions traces contain only crew-level spans.
+
 ## Installation
 
 Add this line to your application's Gemfile:

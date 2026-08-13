@@ -10,6 +10,11 @@ require_relative "rails/engine"
 require_relative "rails/configuration"
 require_relative "rails/crew_builder"
 require_relative "rails/agent_builder"
+require_relative "rails/observation/span_stack"
+require_relative "rails/observation/writer"
+require_relative "rails/observation/rollup"
+require_relative "rails/observation/collector"
+require_relative "rails/observation/pruner"
 
 module RcrewAI
   module Rails
@@ -25,6 +30,14 @@ module RcrewAI
 
       def config
         @configuration ||= Configuration.new
+      end
+
+      def deprecator_warn(message)
+        if defined?(::Rails) && ::Rails.respond_to?(:logger) && ::Rails.logger
+          ::Rails.logger.warn("[rcrewai-rails] DEPRECATION: #{message}")
+        else
+          Kernel.warn("[rcrewai-rails] DEPRECATION: #{message}")
+        end
       end
     end
   end

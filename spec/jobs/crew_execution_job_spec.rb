@@ -58,4 +58,58 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
     execution = crew.executions.order(:id).last
     expect(execution.batch_id).to be_nil
   end
+
+  describe "observation" do
+    def build_observable_crew(name)
+      observed = RcrewAI::Rails::Crew.create!(name: name, process_type: "sequential")
+      agent = observed.agents.create!(name: "writer", role: "Writer", goal: "Write", backstory: "A writer")
+      observed.tasks.create!(description: "Write a line", expected_output: "A line", agent: agent)
+      observed
+    end
+
+    it "nests spans into a single crew-rooted tree" do
+      crew = build_observable_crew("nested")
+      described_class.perform_now(crew, {})
+      execution = crew.executions.order(:created_at).last
+
+      roots = execution.spans.roots.to_a
+      expect(roots.size).to eq(1)
+      expect(roots.first.kind).to eq("crew")
+
+      agent_span = roots.first.children.first
+      expect(agent_span.kind).to eq("agent")
+      expect(agent_span.name).to eq("writer")
+
+      expect(agent_span.children.map(&:kind)).to include("llm_call")
+    end
+
+    it "attributes every non-root span to a parent" do
+      crew = build_observable_crew("parented")
+      described_class.perform_now(crew, {})
+      execution = crew.executions.order(:created_at).last
+
+      orphans = execution.spans.where(parent_span_id: nil).where.not(kind: "crew")
+      expect(orphans).to be_empty
+    end
+
+    it "records spans for the execution" do
+      crew = build_observable_crew("observed")
+      described_class.perform_now(crew, {})
+      execution = crew.executions.order(:created_at).last
+      expect(execution.spans.count).to be > 0
+    end
+
+    it "writes no spans when observation is disabled" do
+      allow(RcrewAI::Rails.config).to receive(:observation_enabled).and_return(false)
+      crew = build_observable_crew("unobserved")
+      described_class.perform_now(crew, {})
+      expect(crew.executions.order(:created_at).last.spans.count).to eq(0)
+    end
+
+    it "leaves no spans running after the job finishes" do
+      crew = build_observable_crew("closed")
+      described_class.perform_now(crew, {})
+      expect(crew.executions.order(:created_at).last.spans.running.count).to eq(0)
+    end
+  end
 end

@@ -5,6 +5,7 @@ module RcrewAI
       
       belongs_to :crew
       has_many :execution_logs, dependent: :destroy
+      has_many :spans, dependent: :destroy
 
       validates :status, inclusion: { in: %w[pending running completed failed cancelled] }
 
@@ -74,7 +75,12 @@ module RcrewAI
         %w[completed failed cancelled].include?(status)
       end
 
+      # Deprecated: superseded by the observation engine's span tree.
+      # Scheduled for removal one minor version after the engine ships.
       def log(level, message, details = {})
+        RcrewAI::Rails.deprecator_warn(
+          "Execution#log and ExecutionLog are deprecated; use the observation engine (Execution#spans)."
+        )
         execution_logs.create!(
           level: level,
           message: message,

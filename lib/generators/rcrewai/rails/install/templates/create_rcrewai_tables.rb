@@ -51,6 +51,7 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
 
     create_table :rcrewai_tasks do |t|
       t.references :crew, null: false, foreign_key: { to_table: :rcrewai_crews }
+      t.references :agent, foreign_key: { to_table: :rcrewai_agents }
       t.text :description, null: false
       t.text :expected_output, null: false
       t.boolean :async_execution, default: false
@@ -69,11 +70,14 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.string :callback_class
       t.string :callback_method_name
       t.integer :position
+      t.boolean :active, default: true
+      t.integer :order_index, default: 0
 
       t.timestamps
     end
 
     add_index :rcrewai_tasks, :position
+    add_index :rcrewai_tasks, :active
 
     create_table :rcrewai_task_assignments do |t|
       t.references :task, null: false, foreign_key: { to_table: :rcrewai_tasks }
@@ -104,6 +108,10 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
       t.datetime :completed_at
       t.integer :duration_seconds
       t.string :batch_id
+      t.decimal :total_cost_usd, precision: 12, scale: 6
+      t.integer :total_tokens
+      t.integer :span_count, default: 0, null: false
+      t.integer :error_count, default: 0, null: false
 
       t.timestamps
     end
@@ -124,6 +132,19 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
 
     add_index :rcrewai_execution_logs, :level
     add_index :rcrewai_execution_logs, :timestamp
+
+    create_table :rcrewai_tools do |t|
+      t.references :agent, null: false, foreign_key: { to_table: :rcrewai_agents }
+      t.string :name, null: false
+      t.text :description
+      t.string :tool_class, null: false
+      t.text :config
+      t.boolean :active, default: true
+
+      t.timestamps
+    end
+
+    add_index :rcrewai_tools, :active
 
     create_table :rcrewai_knowledge_sources do |t|
       t.references :owner, polymorphic: true, null: false
@@ -156,5 +177,44 @@ class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
     end
     add_index :rcrewai_flow_runs, :status
     add_index :rcrewai_flow_runs, :state_id
+
+    create_table :rcrewai_spans do |t|
+      t.references :execution, null: false, foreign_key: { to_table: :rcrewai_executions }
+      t.bigint :parent_span_id
+      t.string :trace_id, null: false
+      t.string :kind, null: false
+      t.string :name, null: false
+      t.string :status, null: false, default: "running"
+      t.datetime :started_at, null: false
+      t.datetime :ended_at
+      t.integer :duration_ms
+      t.integer :prompt_tokens
+      t.integer :completion_tokens
+      t.integer :total_tokens
+      t.decimal :cost_usd, precision: 12, scale: 6
+      t.text :attributes_json
+      t.integer :sequence, null: false
+
+      t.timestamps
+    end
+
+    add_index :rcrewai_spans, :parent_span_id
+    add_index :rcrewai_spans, :trace_id
+    add_index :rcrewai_spans, :kind
+    add_index :rcrewai_spans, :status
+    add_index :rcrewai_spans, %i[execution_id sequence]
+
+    create_table :rcrewai_span_events do |t|
+      t.references :span, null: false, foreign_key: { to_table: :rcrewai_spans }
+      t.string :level, null: false, default: "info"
+      t.string :name, null: false
+      t.text :details
+      t.datetime :timestamp, null: false
+
+      t.timestamps
+    end
+
+    add_index :rcrewai_span_events, :level
+    add_index :rcrewai_span_events, :timestamp
   end
 end

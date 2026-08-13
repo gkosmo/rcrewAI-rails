@@ -38,6 +38,23 @@ RcrewAI::Rails.configure do |config|
   # Options: :debug, :info, :warn, :error
   # Default: :info
   config.log_level = :info
+
+  # Observation engine: span-level tracing of crew executions.
+  # config.observation_enabled = true
+  #
+  # Prompt capture: :none, :truncated (default), or :full.
+  # :full stores complete prompts and completions — these can be large
+  # and may contain PII.
+  # config.observation_capture_prompts = :truncated
+  # config.observation_prompt_max_bytes = 4_096
+  #
+  # :batched buffers span writes off the critical path; :immediate writes
+  # each span as it opens and closes (better for live monitoring).
+  # config.observation_flush_mode = :batched
+  # config.observation_flush_every = 25
+  #
+  # Spans older than this are removed by `rake rcrewai:observation:prune`.
+  # config.observation_retention_days = 30
 end
 
 # Configure RcrewAI base gem if needed

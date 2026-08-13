@@ -1,0 +1,51 @@
+<%#
+  Renders one span and, recursively, its children.
+
+  `children` is the parent_span_id => [spans] map built once by the
+  controller. Children are read from that map, never via `span.children`,
+  which would issue a query per node and turn a deep trace into an N+1.
+
+  A malformed tree (a parent/child cycle, e.g. a bad backfill) would
+  otherwise recurse until the request dies, so recursion is bounded by
+  MAX_SPAN_DEPTH and by `seen`, which drops any span already on the path.
+%>
+<% depth = local_assigns.fetch(:depth, 0) %>
+<% children = local_assigns.fetch(:children, {}) %>
+<% seen = local_assigns.fetch(:seen, []) %>
+<% max_depth = RcrewAI::Rails::ObservationsController::MAX_SPAN_DEPTH %>
+
+<div class="span-row span-<%= span.status %> span-kind-<%= span.kind %>" id="span-<%= span.id %>">
+  <div class="span-line" style="padding-left: <%= depth * 20 %>px">
+    <span class="span-kind"><%= span.kind %></span>
+    <span class="span-name"><%= span.name %></span>
+    <span class="span-status status-<%= span.status %>"><%= span.status %></span>
+    <% if span.duration_ms %>
+      <span class="span-duration"><%= span.duration_ms %>ms</span>
+    <% end %>
+    <% if span.total_tokens.to_i.positive? %>
+      <span class="span-tokens"><%= span.total_tokens %> tokens</span>
+    <% end %>
+    <% if span.cost_usd.present? %>
+      <span class="span-cost">$<%= span.cost_usd %></span>
+    <% end %>
+  </div>
+
+  <% attrs = span.attributes_hash %>
+  <% if attrs.present? %>
+    <details class="span-attributes" style="margin-left: <%= (depth * 20) + 20 %>px">
+      <summary>Details</summary>
+      <pre class="code-block"><%= JSON.pretty_generate(attrs) %></pre>
+    </details>
+  <% end %>
+</div>
+
+<% if depth < max_depth %>
+  <% (children[span.id] || []).each do |child| %>
+    <% next if seen.include?(child.id) %>
+    <%= render "rcrewai/rails/observations/span",
+               span: child,
+               children: children,
+               depth: depth + 1,
+               seen: seen + [span.id] %>
+  <% end %>
+<% end %>

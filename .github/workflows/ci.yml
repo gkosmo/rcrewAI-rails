@@ -17,21 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # rcrewai is not yet published to rubygems. Check out the sibling repo so
-      # the path: "../rcrewAI" dep in our Gemfile resolves. Pinned to the v0.7.0
-      # tag to satisfy the gemspec dep (`rcrewai ~> 0.7`). Once rcrewai ships to
-      # rubygems, the gemspec dep will resolve from there and this step can be
-      # dropped.
-      - name: Check out rcrewAI (sibling repo)
-        uses: actions/checkout@v4
-        with:
-          repository: gkosmo/rcrewAI
-          ref: v0.7.0
-          path: rcrewAI-checkout
-
-      - name: Place rcrewAI alongside this repo
-        run: mv rcrewAI-checkout ../rcrewAI
-
+      # rcrewai now ships to rubygems, so the gemspec dep (`rcrewai ~> 0.7.1`)
+      # resolves from there. The sibling-checkout workaround this job used while
+      # the gem was unpublished has been removed.
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
