@@ -52,6 +52,24 @@ RSpec.describe RcrewAI::Rails::Observation::SpanStack do
     expect(stack.open_span_ids).to match_array([1, 2])
   end
 
+  it "does not retain a bucket for an agent that was only read" do
+    100.times { |i| stack.current(agent: "ghost#{i}") }
+    100.times { |i| stack.pop(agent: "ghost#{i}", key: :iteration) }
+    expect(stack.instance_variable_get(:@stacks)).to be_empty
+  end
+
+  it "keeps untagged events out of a named agent's stack" do
+    stack.push(agent: nil, key: :iteration, id: 1)
+    stack.push(agent: "writer", key: :iteration, id: 2)
+    expect(stack.current(agent: nil)).to eq(1)
+    expect(stack.current(agent: "writer")).to eq(2)
+  end
+
+  it "treats symbol and string agent names as the same agent" do
+    stack.push(agent: :writer, key: :iteration, id: 7)
+    expect(stack.current(agent: "writer")).to eq(7)
+  end
+
   it "is safe under concurrent access" do
     threads = 10.times.map do |i|
       Thread.new do
