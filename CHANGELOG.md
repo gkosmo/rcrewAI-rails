@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Observation engine: span-tree tracing of every crew execution with per-agent,
+  per-LLM-call and per-tool-call detail (timings, token counts, cost). Includes a
+  trace waterfall at `/rcrewai/executions/:id/observation`, a cost/performance
+  dashboard at `/rcrewai/observations/costs`, live monitoring over Turbo Streams,
+  and a `rcrewai:observation:prune` rake task with retention configuration
+  (`observation_retention_days`).
+
+### Deprecated
+- `Execution#log` and `ExecutionLog`, superseded by the observation engine. Both
+  still work and now emit a deprecation warning; scheduled for removal one minor
+  version after this release.
+
+### Requires
+- `rcrewai >= 0.7.1` for agent-level tracing. On earlier 0.7.x versions traces
+  contain only crew-level spans.
+
 ## [0.6.1] - 2026-07-07
 
 ### Fixed

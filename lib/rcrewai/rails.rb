@@ -31,6 +31,14 @@ module RcrewAI
       def config
         @configuration ||= Configuration.new
       end
+
+      def deprecator_warn(message)
+        if defined?(::Rails) && ::Rails.respond_to?(:logger) && ::Rails.logger
+          ::Rails.logger.warn("[rcrewai-rails] DEPRECATION: #{message}")
+        else
+          Kernel.warn("[rcrewai-rails] DEPRECATION: #{message}")
+        end
+      end
     end
   end
 
