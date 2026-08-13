@@ -10,6 +10,10 @@ require_relative "rails/engine"
 require_relative "rails/configuration"
 require_relative "rails/crew_builder"
 require_relative "rails/agent_builder"
+require_relative "rails/observation/span_stack"
+require_relative "rails/observation/writer"
+require_relative "rails/observation/rollup"
+require_relative "rails/observation/collector"
 
 module RcrewAI
   module Rails
