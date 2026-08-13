@@ -14,6 +14,7 @@ require_relative "rails/observation/span_stack"
 require_relative "rails/observation/writer"
 require_relative "rails/observation/rollup"
 require_relative "rails/observation/collector"
+require_relative "rails/observation/pruner"
 
 module RcrewAI
   module Rails
