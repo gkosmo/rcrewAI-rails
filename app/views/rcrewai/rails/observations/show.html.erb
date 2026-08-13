@@ -1,0 +1,47 @@
+<div class="page-header">
+  <h1>Trace for Execution #<%= @execution.id %></h1>
+  <div class="actions">
+    <%= link_to "Back to Execution", execution_path(@execution), class: "btn" %>
+    <%= link_to "Costs", observation_costs_path, class: "btn" %>
+  </div>
+</div>
+
+<div class="execution-details">
+  <div class="status-banner status-<%= @execution.status %>">
+    <strong>Status:</strong> <%= @execution.status.humanize %>
+  </div>
+
+  <div class="metadata-grid">
+    <div class="meta-item">
+      <strong>Spans:</strong> <%= @execution.span_count.to_i %>
+    </div>
+    <div class="meta-item">
+      <strong>Errors:</strong> <%= @execution.error_count.to_i %>
+    </div>
+    <div class="meta-item">
+      <strong>Tokens:</strong> <%= @execution.total_tokens.to_i %>
+    </div>
+    <div class="meta-item">
+      <strong>Cost:</strong> <%= @execution.total_cost_usd.present? ? "$#{@execution.total_cost_usd}" : "N/A" %>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Waterfall</h2>
+
+  <div class="span-tree" id="execution-<%= @execution.id %>-spans">
+    <% if @roots.empty? %>
+      <p class="empty-state">No spans recorded for this execution.</p>
+    <% else %>
+      <% @roots.each do |span| %>
+        <%= render "rcrewai/rails/observations/span",
+                   span: span, children: @children, depth: 0, seen: [] %>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<% if defined?(turbo_stream_from) && @execution.running? %>
+  <%= turbo_stream_from "rcrewai_execution_#{@execution.id}" %>
+<% end %>

@@ -18,7 +18,8 @@ module RcrewAI
           @stack = SpanStack.new
           @writer = writer || Writer.new(
             mode: config.observation_flush_mode,
-            flush_every: config.observation_flush_every
+            flush_every: config.observation_flush_every,
+            on_span_change: method(:broadcast_span)
           )
           @agent_spans = {}
           @root_span_id = nil
@@ -256,6 +257,37 @@ module RcrewAI
           return text if text.bytesize <= max
 
           text.byteslice(0, max).scrub("")
+        end
+
+        # Pushes a single span to anyone watching the live trace.
+        #
+        # This is driven from the writer rather than an ActiveRecord callback
+        # on purpose: span completion is written with update_all, which fires
+        # no callbacks, so an after_update_commit hook would show spans
+        # starting and never finishing.
+        def broadcast_span(span_id)
+          return unless broadcastable?
+
+          span = Span.find_by(id: span_id)
+          return unless span
+
+          ::Turbo::StreamsChannel.broadcast_replace_to(
+            "rcrewai_execution_#{@execution.id}",
+            target: "span-#{span_id}",
+            partial: "rcrewai/rails/observations/span",
+            locals: { span: span, children: {}, depth: 0 }
+          )
+        rescue StandardError => e
+          warn_failure(e)
+        end
+
+        # `defined?(::Turbo::StreamsChannel)` is not enough on its own: in an
+        # app without ActionCable the constant is registered but resolving it
+        # raises, because Turbo::StreamsChannel subclasses ActionCable::Channel.
+        # Checking ActionCable first keeps the no-cable case quiet instead of
+        # logging a warning for every span.
+        def broadcastable?
+          defined?(::ActionCable) && defined?(::Turbo::StreamsChannel) ? true : false
         end
 
         def warn_failure(error)

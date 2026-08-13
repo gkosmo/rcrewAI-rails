@@ -16,6 +16,12 @@ RcrewAI::Rails::Engine.routes.draw do
     end
   end
 
+  resources :executions, only: [] do
+    resource :observation, only: [:show], controller: "observations"
+  end
+
+  get "observations/costs", to: "observations#costs", as: :observation_costs
+
   resources :agents do
     resources :tools
   end

@@ -1,0 +1,52 @@
+<div class="page-header">
+  <h1>Cost &amp; Performance</h1>
+</div>
+
+<div class="metadata-grid">
+  <div class="meta-item">
+    <strong>Total Cost:</strong> $<%= @total_cost %>
+  </div>
+  <div class="meta-item">
+    <strong>Total Tokens:</strong> <%= @total_tokens %>
+  </div>
+  <div class="meta-item">
+    <strong>Executions:</strong> <%= @executions.size %>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Recent Executions</h2>
+
+  <% if @executions.empty? %>
+    <p class="empty-state">No executions with recorded cost yet.</p>
+  <% else %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Execution</th>
+          <th>Crew</th>
+          <th>Status</th>
+          <th>Spans</th>
+          <th>Errors</th>
+          <th>Tokens</th>
+          <th>Cost</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @executions.each do |execution| %>
+          <tr>
+            <td><%= link_to "##{execution.id}", execution_path(execution) %></td>
+            <td><%= execution.crew&.name %></td>
+            <td><span class="status-<%= execution.status %>"><%= execution.status.humanize %></span></td>
+            <td><%= execution.span_count.to_i %></td>
+            <td><%= execution.error_count.to_i %></td>
+            <td><%= execution.total_tokens.to_i %></td>
+            <td>$<%= execution.total_cost_usd %></td>
+            <td><%= link_to "Trace", execution_observation_path(execution), class: "btn btn-sm" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

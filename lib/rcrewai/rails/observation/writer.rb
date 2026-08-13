@@ -10,10 +10,11 @@ module RcrewAI
       class Writer
         attr_reader :dropped_count
 
-        def initialize(mode: :batched, flush_every: 25, logger: nil)
+        def initialize(mode: :batched, flush_every: 25, logger: nil, on_span_change: nil)
           @mode = mode
           @flush_every = flush_every
           @logger = logger
+          @on_span_change = on_span_change
           @buffer = []
           @mutex = Mutex.new
           @dropped_count = 0
@@ -24,14 +25,17 @@ module RcrewAI
           guard do
             span = Span.create!(attrs)
             span.id
-          end
+          end.tap { |id| notify_span_change(id) if id }
         end
 
+        # Writes through update_all, which fires no ActiveRecord callbacks —
+        # so span *completion* would be invisible to any after_update hook.
+        # The change notification is therefore raised explicitly here.
         def update_span(span_id, attrs)
           guard do
             Span.where(id: span_id).update_all(attrs.merge(updated_at: Time.current))
             span_id
-          end
+          end.tap { |id| notify_span_change(id) if id }
         end
 
         # Span events carry no id that anything else references, so in
@@ -57,6 +61,18 @@ module RcrewAI
         end
 
         private
+
+        # A failing subscriber must never surface to the run, and must never
+        # be mistaken for a dropped write, so it is logged and swallowed on
+        # its own rather than through +guard+.
+        def notify_span_change(span_id)
+          return unless @on_span_change
+
+          @on_span_change.call(span_id)
+        rescue StandardError => e
+          @logger&.warn("[rcrewai-rails] span change notification failed: #{e.class}: #{e.message}")
+          nil
+        end
 
         # Any storage failure is counted and swallowed. Observation must
         # never break the execution it is observing.
