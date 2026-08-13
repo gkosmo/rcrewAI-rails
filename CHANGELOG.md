@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-13
+
 ### Added
 - Observation engine: span-tree tracing of every crew execution with per-agent,
   per-LLM-call and per-tool-call detail (timings, token counts, cost). Includes a
@@ -14,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dashboard at `/rcrewai/observations/costs`, live monitoring over Turbo Streams,
   and a `rcrewai:observation:prune` rake task with retention configuration
   (`observation_retention_days`).
+
+### Fixed
+- The install generator only wrote an initializer: it never copied a migration
+  and never mounted the engine, so following the documented install produced no
+  database tables and no reachable UI. It now creates a timestamped
+  `create_rcrewai_tables` migration, mounts the engine at `/rcrewai`, and
+  installs the fully documented initializer.
+- The install migration template was missing the `rcrewai_tools` table and the
+  tasks table's `agent` reference, so a fresh install shipped a `Tool` model with
+  no backing table. The template now matches the schema the test suite validates.
 
 ### Deprecated
 - `Execution#log` and `ExecutionLog`, superseded by the observation engine. Both
@@ -140,7 +152,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.5.0...v0.5.1
