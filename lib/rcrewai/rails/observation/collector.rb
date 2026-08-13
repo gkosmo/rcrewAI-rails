@@ -1,0 +1,220 @@
+# frozen_string_literal: true
+
+require "rcrewai/rails/observation/span_stack"
+require "rcrewai/rails/observation/writer"
+require "rcrewai/rails/observation/rollup"
+
+module RcrewAI
+  module Rails
+    module Observation
+      # Translates the flat RCrewAI event stream into a span tree.
+      #
+      # This is the only component that knows the rcrewai event vocabulary.
+      # If that vocabulary changes, nothing outside this class moves.
+      class Collector
+        def initialize(execution:, writer: nil, trace_id: nil)
+          @execution = execution
+          @trace_id = trace_id || SecureRandom.uuid
+          @stack = SpanStack.new
+          @writer = writer || Writer.new(
+            mode: config.observation_flush_mode,
+            flush_every: config.observation_flush_every
+          )
+          @agent_spans = {}
+          @text_buffers = Hash.new { |h, k| h[k] = +"" }
+        end
+
+        # The sink handed to crew.execute(stream:).
+        def call(event)
+          return unless config.observation_enabled
+
+          case event
+          when RCrewAI::Events::IterationStart then on_iteration_start(event)
+          when RCrewAI::Events::IterationEnd   then on_iteration_end(event)
+          when RCrewAI::Events::ToolCallStart  then on_tool_start(event)
+          when RCrewAI::Events::ToolCallResult then on_tool_result(event)
+          when RCrewAI::Events::ToolCallError  then on_tool_error(event)
+          when RCrewAI::Events::Usage          then on_usage(event)
+          when RCrewAI::Events::TextDelta      then on_text_delta(event)
+          when RCrewAI::Events::TextDone       then on_text_done(event)
+          when RCrewAI::Events::Thinking       then on_thinking(event)
+          when RCrewAI::Events::Error          then on_error(event)
+          end
+        rescue StandardError => e
+          warn_failure(e)
+        end
+
+        # Agent and task spans have no corresponding events, so the engine
+        # opens them explicitly around its own dispatch.
+        def start_agent_span(agent_name:, parent_span_id: nil)
+          id = open_span(
+            kind: "agent", name: agent_name.to_s,
+            parent_span_id: parent_span_id, agent: agent_name
+          )
+          @agent_spans[agent_name.to_s] = id
+          id
+        end
+
+        def finish_agent_span(agent_name:, status: "ok")
+          id = @agent_spans.delete(agent_name.to_s)
+          close_span(id, status: status) if id
+        end
+
+        # Closes anything still open. Called when the run ends, so a crash
+        # mid-span does not leave the tree permanently "running".
+        def finish!
+          @stack.open_span_ids.each { |id| close_span(id, status: "error") }
+          @agent_spans.each_value { |id| close_span(id, status: "error") }
+          @agent_spans.clear
+          @writer.flush!
+        end
+
+        private
+
+        def config
+          RcrewAI::Rails.config
+        end
+
+        def on_iteration_start(event)
+          parent = @agent_spans[event.agent.to_s]
+          id = open_span(
+            kind: "llm_call", name: "iteration #{event.iteration_index}",
+            parent_span_id: parent, agent: event.agent
+          )
+          @stack.push(agent: event.agent, key: :iteration, id: id)
+        end
+
+        def on_iteration_end(event)
+          id = @stack.pop(agent: event.agent, key: :iteration)
+          return unless id
+
+          merge_attributes(id, "finish_reason" => event.finish_reason.to_s)
+          close_span(id, status: "ok")
+        end
+
+        def on_tool_start(event)
+          id = open_span(
+            kind: "tool_call", name: event.tool.to_s,
+            parent_span_id: @stack.current(agent: event.agent), agent: event.agent,
+            attributes: { "args" => event.args }
+          )
+          @stack.register_call(call_id: event.call_id, span_id: id)
+        end
+
+        def on_tool_result(event)
+          id = @stack.resolve_call(call_id: event.call_id)
+          return unless id
+
+          merge_attributes(id, "duration_ms" => event.duration_ms,
+                               "result" => truncate(event.result.to_s))
+          close_span(id, status: "ok")
+        end
+
+        def on_tool_error(event)
+          id = @stack.resolve_call(call_id: event.call_id)
+          return unless id
+
+          merge_attributes(id, "error" => event.error.to_s)
+          close_span(id, status: "error")
+        end
+
+        def on_usage(event)
+          id = @stack.current(agent: event.agent)
+          return unless id
+
+          @writer.update_span(id,
+                              prompt_tokens: event.prompt_tokens,
+                              completion_tokens: event.completion_tokens,
+                              total_tokens: event.total_tokens,
+                              cost_usd: event.cost_usd)
+          Rollup.record_usage(@execution, tokens: event.total_tokens, cost: event.cost_usd)
+        end
+
+        # Deltas are far too chatty to persist individually. They accumulate
+        # in memory and are written once on TextDone.
+        def on_text_delta(event)
+          return if config.observation_capture_prompts == :none
+
+          @text_buffers[event.agent.to_s] << event.text.to_s
+        end
+
+        def on_text_done(event)
+          @text_buffers.delete(event.agent.to_s)
+          return if config.observation_capture_prompts == :none
+
+          id = @stack.current(agent: event.agent)
+          return unless id
+
+          merge_attributes(id, "text" => truncate(event.text.to_s))
+        end
+
+        def on_thinking(event)
+          return if config.observation_capture_prompts == :none
+
+          id = @stack.current(agent: event.agent)
+          return unless id
+
+          merge_attributes(id, "thinking" => truncate(event.text.to_s))
+        end
+
+        def on_error(event)
+          id = @stack.current(agent: event.agent)
+          return unless id
+
+          merge_attributes(id, "error" => event.error.to_s)
+          close_span(id, status: "error")
+          Rollup.record_error(@execution)
+        end
+
+        def open_span(kind:, name:, parent_span_id: nil, agent: nil, attributes: {})
+          attrs = attributes.dup
+          attrs["agent"] = agent.to_s if agent
+          @writer.create_span(
+            execution_id: @execution.id,
+            parent_span_id: parent_span_id,
+            trace_id: @trace_id,
+            kind: kind,
+            name: name,
+            status: "running",
+            started_at: Time.current,
+            sequence: @stack.next_sequence,
+            attributes_json: JSON.generate(attrs),
+            created_at: Time.current,
+            updated_at: Time.current
+          ).tap { Rollup.record_span(@execution) }
+        end
+
+        def close_span(span_id, status:)
+          span = Span.find_by(id: span_id)
+          return unless span&.running?
+
+          ended = Time.current
+          @writer.update_span(span_id,
+                              status: status,
+                              ended_at: ended,
+                              duration_ms: ((ended - span.started_at) * 1000).round)
+        end
+
+        def merge_attributes(span_id, hash)
+          span = Span.find_by(id: span_id)
+          return unless span
+
+          @writer.update_span(span_id, attributes_json: JSON.generate(span.attributes_hash.merge(hash)))
+        end
+
+        def truncate(text)
+          return text if config.observation_capture_prompts == :full
+
+          max = config.observation_prompt_max_bytes
+          text.bytesize <= max ? text : text.byteslice(0, max)
+        end
+
+        def warn_failure(error)
+          return unless defined?(::Rails) && ::Rails.respond_to?(:logger) && ::Rails.logger
+
+          ::Rails.logger.warn("[rcrewai-rails] observation collector error: #{error.class}: #{error.message}")
+        end
+      end
+    end
+  end
+end
