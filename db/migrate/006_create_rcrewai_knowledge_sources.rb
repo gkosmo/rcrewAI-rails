@@ -1,4 +1,4 @@
-class CreateRcrewaiKnowledgeSources < ActiveRecord::Migration[7.0]
+class CreateRcrewAIKnowledgeSources < ActiveRecord::Migration[7.0]
   def change
     create_table :rcrewai_knowledge_sources do |t|
       t.references :owner, polymorphic: true, null: false

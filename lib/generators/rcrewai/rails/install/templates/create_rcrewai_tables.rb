@@ -1,4 +1,4 @@
-class CreateRcrewaiTables < ActiveRecord::Migration[7.0]
+class CreateRcrewAITables < ActiveRecord::Migration[7.0]
   def change
     create_table :rcrewai_crews do |t|
       t.string :name, null: false

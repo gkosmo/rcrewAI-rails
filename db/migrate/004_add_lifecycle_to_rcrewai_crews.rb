@@ -1,4 +1,4 @@
-class AddLifecycleToRcrewaiCrews < ActiveRecord::Migration[7.0]
+class AddLifecycleToRcrewAICrews < ActiveRecord::Migration[7.0]
   def change
     add_column :rcrewai_crews, :planning, :boolean, default: false, null: false
     add_column :rcrewai_crews, :planning_llm, :string
