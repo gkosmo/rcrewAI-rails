@@ -67,6 +67,31 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
       observed
     end
 
+    it "nests spans into a single crew-rooted tree" do
+      crew = build_observable_crew("nested")
+      described_class.perform_now(crew, {})
+      execution = crew.executions.order(:created_at).last
+
+      roots = execution.spans.roots.to_a
+      expect(roots.size).to eq(1)
+      expect(roots.first.kind).to eq("crew")
+
+      agent_span = roots.first.children.first
+      expect(agent_span.kind).to eq("agent")
+      expect(agent_span.name).to eq("writer")
+
+      expect(agent_span.children.map(&:kind)).to include("llm_call")
+    end
+
+    it "attributes every non-root span to a parent" do
+      crew = build_observable_crew("parented")
+      described_class.perform_now(crew, {})
+      execution = crew.executions.order(:created_at).last
+
+      orphans = execution.spans.where(parent_span_id: nil).where.not(kind: "crew")
+      expect(orphans).to be_empty
+    end
+
     it "records spans for the execution" do
       crew = build_observable_crew("observed")
       described_class.perform_now(crew, {})

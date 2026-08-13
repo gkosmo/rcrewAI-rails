@@ -20,11 +20,14 @@ module RcrewAI
           rcrew = crew.to_rcrew
 
           collector = collector_for(execution)
-          root_span_id = collector&.start_agent_span(agent_name: crew.name)
+          collector&.start_crew_span(crew_name: crew.name)
 
           result = rcrew.execute(stream: collector)
 
-          collector&.finish_agent_span(agent_name: crew.name) if root_span_id
+          # Close agent spans as successful before finish!, which treats
+          # anything still open as an aborted run.
+          collector&.finish_open_agent_spans(status: "ok")
+          collector&.finish_crew_span(status: "ok")
           collector&.finish!
 
           execution.complete!(result)

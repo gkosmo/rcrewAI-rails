@@ -21,6 +21,7 @@ module RcrewAI
             flush_every: config.observation_flush_every
           )
           @agent_spans = {}
+          @root_span_id = nil
           @text_buffers = Hash.new { |h, k| h[k] = +"" }
         end
 
@@ -44,20 +45,41 @@ module RcrewAI
           warn_failure(e)
         end
 
+        # Opens the run's root span. rcrewai emits no crew-level event, so
+        # the engine opens this explicitly around its own dispatch.
+        def start_crew_span(crew_name:)
+          @root_span_id = open_span(kind: "crew", name: crew_name.to_s)
+        end
+
+        def finish_crew_span(status: "ok")
+          id = @root_span_id
+          @root_span_id = nil
+          close_span(id, status: status) if id
+        end
+
         # Agent and task spans have no corresponding events, so the engine
         # opens them explicitly around its own dispatch.
         def start_agent_span(agent_name:, parent_span_id: nil)
+          key = SpanStack.key_for(agent_name)
           id = open_span(
             kind: "agent", name: agent_name.to_s,
-            parent_span_id: parent_span_id, agent: agent_name
+            parent_span_id: parent_span_id || @root_span_id, agent: agent_name
           )
-          @agent_spans[agent_name.to_s] = id
+          @agent_spans[key] = id
           id
         end
 
         def finish_agent_span(agent_name:, status: "ok")
-          id = @agent_spans.delete(agent_name.to_s)
+          id = @agent_spans.delete(SpanStack.key_for(agent_name))
           close_span(id, status: status) if id
+        end
+
+        # Closes every agent span opened lazily from the event stream. The
+        # caller uses this on the success path; finish! closes whatever is
+        # left as errored.
+        def finish_open_agent_spans(status: "ok")
+          @agent_spans.each_value { |id| close_span(id, status: status) }
+          @agent_spans.clear
         end
 
         # Closes anything still open. Called when the run ends, so a crash
@@ -66,6 +88,9 @@ module RcrewAI
           @stack.open_span_ids.compact.each { |id| close_span(id, status: "error") }
           @agent_spans.each_value { |id| close_span(id, status: "error") }
           @agent_spans.clear
+          # Close the root last: its children must be closed first so the
+          # waterfall shows the run finishing after everything inside it.
+          finish_crew_span(status: "error")
           # Deltas accumulate per agent and are normally freed by TextDone.
           # A stream that aborts mid-generation never sends one, so drop
           # anything left rather than retaining the whole generated text.
@@ -80,12 +105,23 @@ module RcrewAI
         end
 
         def on_iteration_start(event)
-          parent = @agent_spans[event.agent.to_s]
           id = open_span(
             kind: "llm_call", name: "iteration #{event.iteration_index}",
-            parent_span_id: parent, agent: event.agent
+            parent_span_id: agent_span_for(event.agent), agent: event.agent
           )
           @stack.push(agent: event.agent, key: :iteration, id: id)
+        end
+
+        # Returns the agent span that events from +agent+ belong under,
+        # opening one on first sight. rcrewai emits no AgentStart event, and
+        # the agent named in the event stream is the *agent*, never the crew
+        # — so the root span alone can never be the parent.
+        def agent_span_for(agent)
+          key = SpanStack.key_for(agent)
+          @agent_spans[key] ||= open_span(
+            kind: "agent", name: agent.to_s.empty? ? "(unattributed)" : agent.to_s,
+            parent_span_id: @root_span_id, agent: agent
+          )
         end
 
         def on_iteration_end(event)
