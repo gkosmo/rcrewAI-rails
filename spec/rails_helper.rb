@@ -21,6 +21,7 @@ Combustion::Database.setup(
 )
 
 require "rspec/rails" if defined?(Rails)
+require_relative "support/isolated_migration"
 
 RSpec.configure do |config|
   config.use_transactional_fixtures = true

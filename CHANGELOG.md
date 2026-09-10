@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-10
+
+### Fixed
+- **Enabling checkpointing without running the 0.8 migration failed mid-run.**
+  `CrewExecutionJob` built the default `ActiveRecordCheckpointStore` without
+  checking that its table existed, so the run raised
+  `ActiveRecord::StatementInvalid: Could not find table 'rcrewai_checkpoints'`
+  partway through — after tasks had already executed and been paid for, and
+  with nothing in the message naming the cause. The job now fails up front with
+  `CheckpointTableMissing`, whose message names the migration command to run.
+  It is `discard_on`'d rather than retried, since retrying cannot fix a missing
+  table. Configuring a custom `checkpoint_store` skips the check, and nothing
+  changes when checkpointing is off (the default).
+- **The test suite was order-dependent.** `real_migrate_spec` and
+  `upgrade_migrate_spec` called `ActiveRecord::Base.establish_connection` to get
+  a scratch database for migrating. The test database is sqlite3 `":memory:"`,
+  so that discarded the pool holding Combustion's schema, and reconnecting gave
+  an empty database — every later example lost its tables. The suite passed only
+  because those specs happened to run last: under `--order random` it failed
+  ~128 of 258 examples. Migrations now run against an isolated connection via
+  `ActiveRecord::Tasks::DatabaseTasks.migration_class`, leaving the suite's own
+  connection untouched.
+- **`rails_logger_tool_spec` leaked a fake `Rails.logger`** into every example
+  that ran after it. The fake accepts exactly one argument, so unrelated specs
+  logging through the real logger raised `ArgumentError: wrong number of
+  arguments`. It is now restored after each example.
+
+### Changed
+- Specs run in random order by default (`config.order = :random`), so an example
+  that leaks global state fails immediately instead of silently depending on
+  file order. Seeds are reproducible: `bundle exec rspec --seed 1234`.
+
 ## [0.8.0] - 2026-09-10
 
 Tracks **rcrewai 0.8.0**, which is backward compatible for this engine — the
@@ -242,7 +274,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.1...v0.7.0

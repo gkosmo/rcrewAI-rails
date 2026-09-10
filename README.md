@@ -313,6 +313,11 @@ RCrewAI::Checkpoint.lineage(store, resumed.run_id)
 Any object responding to `save`/`load`/`list`/`delete` can replace the store via
 `config.checkpoint_store`.
 
+Checkpointing needs the `rcrewai_checkpoints` table, so run the migration when
+you enable it (see [Upgrading an existing install](#upgrading-an-existing-install)).
+If the table is missing, the job raises `CheckpointTableMissing` up front rather
+than failing partway through a run.
+
 ### LLM interceptors
 
 Hooks that run around every LLM request the engine's agents make — useful for

@@ -24,22 +24,19 @@ RSpec.describe "running the generated migration the way Rails does" do
   it "migrates without raising NameError" do
     migration_dir = File.join(destination, "db/migrate")
 
-    conn = ActiveRecord::Base.establish_connection(
-      adapter: "sqlite3", database: ":memory:"
-    ).lease_connection
+    with_isolated_database do |conn|
+      # MigrationContext resolves each migration's class from its filename via
+      # the active inflections — the exact step a hand-rolled `load` +
+      # constant call skips, and the step that raised NameError in 0.7.0.
+      expect { migrate_isolated(migration_dir) }.not_to raise_error
 
-    # MigrationContext resolves each migration's class from its filename via the
-    # active inflections — the exact step a hand-rolled `load` + constant call
-    # skips, and the step that raised NameError in 0.7.0.
-    context = ActiveRecord::MigrationContext.new(migration_dir)
-    expect { context.migrate }.not_to raise_error
+      tables = conn.tables.grep(/rcrewai/)
+      expect(tables).to include("rcrewai_crews", "rcrewai_spans", "rcrewai_span_events", "rcrewai_tools",
+                                "rcrewai_checkpoints")
 
-    tables = conn.tables.grep(/rcrewai/)
-    expect(tables).to include("rcrewai_crews", "rcrewai_spans", "rcrewai_span_events", "rcrewai_tools",
-                              "rcrewai_checkpoints")
-
-    # rcrewai 0.8 checkpointing columns.
-    expect(conn.columns("rcrewai_executions").map(&:name)).to include("run_id", "parent_run_id")
-    expect(conn.columns("rcrewai_crews").map(&:name)).to include("checkpoint_enabled")
+      # rcrewai 0.8 checkpointing columns.
+      expect(conn.columns("rcrewai_executions").map(&:name)).to include("run_id", "parent_run_id")
+      expect(conn.columns("rcrewai_crews").map(&:name)).to include("checkpoint_enabled")
+    end
   end
 end
