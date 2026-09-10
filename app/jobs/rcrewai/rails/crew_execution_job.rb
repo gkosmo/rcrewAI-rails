@@ -1,9 +1,16 @@
 module RcrewAI
   module Rails
     class CrewExecutionJob < ActiveJob::Base
+      # Raised when checkpointing is enabled but its table is missing, which
+      # means the 0.8 migration has not been run.
+      class CheckpointTableMissing < StandardError; end
+
       queue_as { RcrewAI::Rails.config.job_queue_name }
 
       retry_on StandardError, wait: :exponentially_longer, attempts: 3
+      # A missing table is a configuration problem: retrying cannot fix it and
+      # only delays the error the operator needs to see.
+      discard_on CheckpointTableMissing
 
       def perform(crew, inputs = {}, batch_id: nil, resume_run_id: nil)
         execution = crew.executions.create!(
@@ -69,7 +76,24 @@ module RcrewAI
                   end
         return nil unless enabled
 
-        RcrewAI::Rails.config.checkpoint_store || ActiveRecordCheckpointStore.new
+        store = RcrewAI::Rails.config.checkpoint_store
+        return store if store
+
+        ensure_checkpoint_table!
+        ActiveRecordCheckpointStore.new
+      end
+
+      # Checkpointing was turned on but the 0.8 migration has not been run, so
+      # the default store has no table to write to. Failing here with the fix
+      # in the message beats an ActiveRecord::StatementInvalid raised partway
+      # through the run, once tasks have already been executed and paid for.
+      def ensure_checkpoint_table!
+        return if Checkpoint.table_exists?
+
+        raise CheckpointTableMissing,
+              "checkpointing is enabled but the #{Checkpoint.table_name} table does not exist. " \
+              "Run `rails rcrew_ai_rails:install:migrations && rails db:migrate` to add it, " \
+              "or set config.checkpoint_enabled = false."
       end
 
       # Translates rcrewai events into the span tree. Returns nil when

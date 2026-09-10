@@ -17,4 +17,11 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  # Run in a random order so an example that leaks global state (a swapped
+  # database connection, a replaced Rails.logger) fails here rather than
+  # silently depending on the file order. Seeds are reproducible:
+  # `bundle exec rspec --seed 1234`.
+  config.order = :random
+  Kernel.srand config.seed
 end

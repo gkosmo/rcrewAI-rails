@@ -13,7 +13,18 @@ RSpec.describe RcrewAI::Rails::Tools::RailsLoggerTool do
     end.new
   end
 
-  before { Rails.logger = logger }
+  # Rails.logger is global. Restore it afterwards so this fake -- which
+  # accepts exactly one argument and no block -- cannot break unrelated
+  # examples that log through the real logger.
+  around do |example|
+    previous = Rails.logger
+    Rails.logger = logger
+    begin
+      example.run
+    ensure
+      Rails.logger = previous
+    end
+  end
 
   describe "schema" do
     it "requires level and message and enumerates levels" do

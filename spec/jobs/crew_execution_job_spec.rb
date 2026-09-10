@@ -203,4 +203,47 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
       expect { crew.resume_sync(nil) }.to raise_error(ArgumentError, /no checkpoint run id/)
     end
   end
+
+  describe "checkpointing without the 0.8 migration" do
+    let(:crew) do
+      RcrewAI::Rails::Crew.create!(name: "C", process_type: "sequential", checkpoint_enabled: true)
+    end
+
+    before do
+      agent = crew.agents.create!(name: "a", role: "Worker")
+      crew.tasks.create!(description: "do it", expected_output: "ok", agent: agent)
+      # Simulate an install that enabled checkpointing but never migrated.
+      allow(RcrewAI::Rails::Checkpoint).to receive(:table_exists?).and_return(false)
+    end
+
+    it "raises a message naming the fix, before any task runs" do
+      # The point of failing early: no LLM work is paid for first.
+      expect_any_instance_of(RCrewAI::Crew).not_to receive(:execute)
+
+      expect { described_class.new.perform(crew) }
+        .to raise_error(described_class::CheckpointTableMissing, /rcrew_ai_rails:install:migrations/)
+    end
+
+    it "marks the execution failed rather than leaving it running" do
+      expect { described_class.new.perform(crew) }.to raise_error(described_class::CheckpointTableMissing)
+
+      expect(crew.executions.order(:id).last.status).to eq("failed")
+    end
+
+    it "does not raise when a custom store is configured instead" do
+      RcrewAI::Rails.config.checkpoint_store = RCrewAI::Checkpoint::MemoryStore.new
+
+      expect { described_class.new.perform(crew) }.not_to raise_error
+      expect(crew.executions.order(:id).last.status).to eq("completed")
+    ensure
+      RcrewAI::Rails.config.checkpoint_store = nil
+    end
+
+    it "is unaffected when checkpointing is off" do
+      crew.update!(checkpoint_enabled: false)
+
+      expect { described_class.new.perform(crew) }.not_to raise_error
+      expect(crew.executions.order(:id).last.status).to eq("completed")
+    end
+  end
 end
