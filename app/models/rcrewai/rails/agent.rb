@@ -34,7 +34,7 @@ module RcrewAI
         )
       end
 
-      # rcrewai 0.5.0 agent options. Only emit a key when it is meaningfully
+      # rcrewai 0.5.0+ agent options. Only emit a key when it is meaningfully
       # set, so an all-default record constructs exactly as it did pre-0.5.
       def agent_options
         opts = {}
@@ -42,6 +42,10 @@ module RcrewAI
         opts[:reasoning] = reasoning if reasoning
         opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
         opts[:respect_context_window] = respect_context_window if respect_context_window
+        # rcrewai 0.9 runs a turn's tool calls concurrently by default. nil
+        # means "leave the gem's default alone"; only an explicit false (or
+        # true) is forwarded.
+        opts[:parallel_tools] = parallel_tools unless parallel_tools.nil?
         opts[:llm] = llm_config.symbolize_keys if llm_config.present?
         sources = rcrew_knowledge_sources
         opts[:knowledge_sources] = sources if sources.any?

@@ -37,6 +37,8 @@ RSpec.describe "running the generated migration the way Rails does" do
       # rcrewai 0.8 checkpointing columns.
       expect(conn.columns("rcrewai_executions").map(&:name)).to include("run_id", "parent_run_id")
       expect(conn.columns("rcrewai_crews").map(&:name)).to include("checkpoint_enabled")
+      # rcrewai 0.9 concurrency opt-out.
+      expect(conn.columns("rcrewai_agents").map(&:name)).to include("parallel_tools")
     end
   end
 end

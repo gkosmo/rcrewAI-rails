@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-10
+
+Tracks **rcrewai 0.9.0**, whose theme is concurrency: a turn's tool calls,
+consensus proposals/scoring, and embeddings now fan out across threads. The
+0.8.1 suite passed against it unchanged, so this release is about verifying the
+engine under concurrency and exposing the new opt-out.
+
+### Added
+- `rcrewai_agents.parallel_tools` — forwards `parallel_tools:` to
+  `RCrewAI::Agent`. rcrewai 0.9 runs a turn's tool calls concurrently by
+  default; set this to `false` on an agent whose tools are not safe to run in
+  parallel (or that must not fan out against a rate-limited API). Nullable, and
+  only forwarded when explicitly set, so existing agents keep the gem's default.
+
+### Verified
+- **Span attribution holds under concurrent tool calls.** rcrewai 0.9 emits tool
+  events from worker threads, carrying the run span across the boundary
+  (`Events.with_parent` is thread-local). Confirmed against the real gem that
+  concurrent tool events arrive with the correct `parent_id` and none nil, and
+  added collector specs covering interleaved starts/results matched by
+  `call_id`, a failing tool not affecting its sibling, and delivery from eight
+  threads at once.
+
+### Changed
+- Requires `rcrewai ~> 0.9.0`.
+
+### Upgrading
+Existing installs need the new migration:
+
+```bash
+$ rails rcrew_ai_rails:install:migrations
+$ rails db:migrate
+```
+
+This adds one nullable column, `rcrewai_agents.parallel_tools`. Nothing changes
+until you set it.
+
 ## [0.8.1] - 2026-09-10
 
 ### Fixed
@@ -274,7 +311,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.0...v0.7.1
