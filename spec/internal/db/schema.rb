@@ -19,6 +19,7 @@ ActiveRecord::Schema.define(version: 1) do
     t.string :after_kickoff_class
     t.string :after_kickoff_method
     t.text :config
+    t.boolean :checkpoint_enabled
     t.boolean :active, default: true
     t.timestamps
   end
@@ -105,11 +106,14 @@ ActiveRecord::Schema.define(version: 1) do
     t.integer :total_tokens
     t.integer :span_count, default: 0, null: false
     t.integer :error_count, default: 0, null: false
+    t.string :run_id
+    t.string :parent_run_id
     t.timestamps
   end
   add_index :rcrewai_executions, :status
   add_index :rcrewai_executions, :created_at
   add_index :rcrewai_executions, :batch_id
+  add_index :rcrewai_executions, :run_id
 
   create_table :rcrewai_execution_logs, force: true do |t|
     t.references :execution, null: false, foreign_key: { to_table: :rcrewai_executions }
@@ -196,4 +200,15 @@ ActiveRecord::Schema.define(version: 1) do
   end
   add_index :rcrewai_span_events, :level
   add_index :rcrewai_span_events, :timestamp
+
+  create_table :rcrewai_checkpoints, force: true do |t|
+    t.string :run_id, null: false
+    t.string :parent_run_id
+    t.string :crew_name
+    t.text :data, null: false
+    t.datetime :checkpoint_updated_at
+    t.timestamps
+  end
+  add_index :rcrewai_checkpoints, :run_id, unique: true
+  add_index :rcrewai_checkpoints, :parent_run_id
 end

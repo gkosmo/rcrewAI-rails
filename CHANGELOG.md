@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-10
+
+Tracks **rcrewai 0.8.0**, which is backward compatible for this engine — the
+0.7.1 suite passed against it unchanged. This release is about surfacing the
+new capabilities in Rails terms: durable **checkpointing** with resume, **LLM
+interceptors**, and the **event hierarchy**, plus the four new providers.
+
+### Added
+- **Checkpointing.** `RcrewAI::Rails::ActiveRecordCheckpointStore` persists
+  rcrewai crew checkpoints to the new `rcrewai_checkpoints` table, implementing
+  the gem's store contract (`save`/`load`/`list`/`delete`). Enable globally with
+  `config.checkpoint_enabled = true`, or per crew via the new
+  `checkpoint_enabled` column. Records are stored verbatim as JSON, so a record
+  written by any store implementation round-trips identically.
+- **Resume.** `crew.resume_async(execution)` / `crew.resume_sync(execution)`
+  re-run a checkpointed execution, replaying tasks that already completed
+  instead of paying for them again. Accepts an `Execution` or a bare run id.
+  `crew.resumable_executions` lists what can be resumed.
+- **Run lineage.** Executions record `run_id` and `parent_run_id`, so a resumed
+  run links back to the one it continues and `RCrewAI::Checkpoint.lineage`
+  walks the chain. `RcrewAI::Rails::Checkpoint` exposes `children`, `roots`,
+  `completed_task_names` and `failed_task_names`.
+- **LLM interceptors.** `config.llm_before_request` and
+  `config.llm_after_response` attach rcrewai 0.8 hooks to every client the
+  engine builds. The gem forwards hooks only through `LLMClient.for_provider`,
+  and agents resolve their client via `LLMClient.resolve`, which does not — so
+  the engine registers them on the built client, covering per-agent LLMs too.
+- **New providers.** `openai_compatible`, `bedrock`, `snowflake` and
+  `openai_responses` resolve through an agent's `llm_config` and are documented
+  in the generated initializer. (No engine change was required — provider
+  values pass through to the gem — but they are now covered by specs.)
+
+### Fixed
+- **Crew inputs never reached the gem.** `CrewExecutionJob` persisted the
+  execution's `inputs` but called `rcrew.execute` without them, so
+  `before_kickoff` hooks and `Crew#last_inputs` always saw `{}` and no task
+  could interpolate an input. Inputs are now forwarded. Pre-existing, unrelated
+  to the upgrade.
+- **Concurrent runs of the same agent shared one span stack.** The observation
+  collector keyed open spans by agent name, so when one agent ran twice
+  concurrently, one run's tool call could nest under the other run's iteration
+  (and its usage, text and errors could land on the wrong span). rcrewai 0.8
+  stamps every event with the id of its enclosing run span; the collector now
+  scopes its bookkeeping by that id. Events without one — older streams, and
+  the engine's own crew/agent spans — keep the previous behavior.
+
+### Changed
+- Requires `rcrewai ~> 0.8.0`.
+- `SpanStack.key_for` takes an optional second argument (the run id) and
+  `push`/`pop`/`current` take an optional `run_id:`. Existing calls without it
+  behave as before.
+
+### Upgrading
+Existing installs need the new migration:
+
+```bash
+$ rails rcrew_ai_rails:install:migrations
+$ rails db:migrate
+```
+
+This adds `rcrewai_checkpoints`, `rcrewai_crews.checkpoint_enabled`, and
+`run_id`/`parent_run_id` on `rcrewai_executions`. Checkpointing is off by
+default, so nothing changes until you enable it.
+
 ## [0.7.1] - 2026-08-13
 
 ### Fixed
@@ -178,7 +242,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.6.0...v0.6.1

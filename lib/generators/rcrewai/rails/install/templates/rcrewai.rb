@@ -16,7 +16,13 @@ RcrewAI::Rails.configure do |config|
   config.persistence_backend = :active_record
 
   # Default LLM provider
-  # Options: "openai", "anthropic", "cohere", "groq", etc.
+  # Options: "openai", "anthropic", "google", "azure", "ollama", and (rcrewai
+  # 0.8+) "openai_compatible", "bedrock", "snowflake", "openai_responses".
+  #   openai_compatible - any OpenAI-format endpoint (Groq, Together,
+  #                       Fireworks, vLLM, OpenRouter); needs RCrewAI's
+  #                       base_url set.
+  #   bedrock           - AWS Bedrock Converse API; needs aws_region.
+  #   snowflake         - Snowflake Cortex; needs snowflake_account.
   config.default_llm_provider = ENV.fetch("RCREWAI_LLM_PROVIDER", "openai")
 
   # Default LLM model
@@ -67,4 +73,32 @@ RcrewAI.configure do |config|
   # Configure other RcrewAI settings
   # config.default_model = "gpt-4"
   # config.temperature = 0.7
+
+  # --- Checkpointing (rcrewai 0.8+) -----------------------------------------
+  # Records durable per-task state during a crew run so an interrupted run can
+  # be resumed instead of re-executing (and re-paying for) completed tasks.
+  # Off by default; a crew record can also opt in individually via its
+  # checkpoint_enabled column.
+  # config.checkpoint_enabled = true
+
+  # Where checkpoints are stored. Defaults to the bundled ActiveRecord store
+  # (the rcrewai_checkpoints table). Any object responding to
+  # save/load/list/delete works.
+  # config.checkpoint_store = RcrewAI::Rails::ActiveRecordCheckpointStore.new
+
+  # --- LLM interceptors (rcrewai 0.8+) --------------------------------------
+  # Hooks run around every LLM request the engine's agents make. Each receives
+  # (payload, context) / (result, context); return a replacement to modify it,
+  # or nil to leave it untouched. A hook that raises is reported and skipped,
+  # so instrumentation can never break a run.
+  #
+  # config.llm_before_request = lambda do |payload, context|
+  #   Rails.logger.info("[llm] -> #{context[:provider]}/#{context[:model]}")
+  #   payload
+  # end
+  #
+  # config.llm_after_response = lambda do |result, context|
+  #   Rails.logger.info("[llm] <- #{context[:duration_ms]}ms")
+  #   result
+  # end
 end

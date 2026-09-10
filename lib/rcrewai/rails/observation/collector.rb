@@ -106,11 +106,12 @@ module RcrewAI
         end
 
         def on_iteration_start(event)
+          run = SpanStack.run_id_for(event)
           id = open_span(
             kind: "llm_call", name: "iteration #{event.iteration_index}",
             parent_span_id: agent_span_for(event.agent), agent: event.agent
           )
-          @stack.push(agent: event.agent, key: :iteration, id: id)
+          @stack.push(agent: event.agent, key: :iteration, id: id, run_id: run)
         end
 
         # Returns the agent span that events from +agent+ belong under,
@@ -126,7 +127,7 @@ module RcrewAI
         end
 
         def on_iteration_end(event)
-          id = @stack.pop(agent: event.agent, key: :iteration)
+          id = @stack.pop(agent: event.agent, key: :iteration, run_id: SpanStack.run_id_for(event))
           return unless id
 
           merge_attributes(id, "finish_reason" => event.finish_reason.to_s)
@@ -136,7 +137,8 @@ module RcrewAI
         def on_tool_start(event)
           id = open_span(
             kind: "tool_call", name: event.tool.to_s,
-            parent_span_id: @stack.current(agent: event.agent), agent: event.agent,
+            parent_span_id: @stack.current(agent: event.agent, run_id: SpanStack.run_id_for(event)),
+            agent: event.agent,
             attributes: { "args" => event.args }
           )
           @stack.register_call(call_id: event.call_id, span_id: id)
@@ -160,7 +162,7 @@ module RcrewAI
         end
 
         def on_usage(event)
-          id = @stack.current(agent: event.agent)
+          id = @stack.current(agent: event.agent, run_id: SpanStack.run_id_for(event))
           return unless id
 
           @writer.update_span(id,
@@ -176,16 +178,16 @@ module RcrewAI
         def on_text_delta(event)
           return if config.observation_capture_prompts == :none
 
-          @text_buffers[SpanStack.key_for(event.agent)] << event.text.to_s
+          @text_buffers[SpanStack.key_for(event.agent, SpanStack.run_id_for(event))] << event.text.to_s
         end
 
         # Prefers the event's own text, falling back to the accumulated
         # deltas when the provider sends TextDone without a payload.
         def on_text_done(event)
-          buffered = @text_buffers.delete(SpanStack.key_for(event.agent))
+          buffered = @text_buffers.delete(SpanStack.key_for(event.agent, SpanStack.run_id_for(event)))
           return if config.observation_capture_prompts == :none
 
-          id = @stack.current(agent: event.agent)
+          id = @stack.current(agent: event.agent, run_id: SpanStack.run_id_for(event))
           return unless id
 
           text = event.text.to_s
@@ -196,14 +198,14 @@ module RcrewAI
         def on_thinking(event)
           return if config.observation_capture_prompts == :none
 
-          id = @stack.current(agent: event.agent)
+          id = @stack.current(agent: event.agent, run_id: SpanStack.run_id_for(event))
           return unless id
 
           merge_attributes(id, "thinking" => truncate(event.text.to_s))
         end
 
         def on_error(event)
-          id = @stack.current(agent: event.agent)
+          id = @stack.current(agent: event.agent, run_id: SpanStack.run_id_for(event))
           return unless id
 
           merge_attributes(id, "error" => event.error.to_s)

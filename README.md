@@ -10,11 +10,12 @@ Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewai-rails) 
 - **Web UI**: Monitor and manage crews through a built-in interface
 - **Rails-Specific Tools**: Pre-built tools for ActiveRecord, ActionMailer, Rails cache, and more
 - **Configuration**: Flexible configuration through Rails initializers
-- **Full rcrewai 0.7 feature coverage** (see [rcrewai 0.7 capabilities](#rcrewai-07-capabilities)):
+- **Full rcrewai 0.8 feature coverage** (see [rcrewai 0.8 capabilities](#rcrewai-08-capabilities) and [rcrewai 0.7 capabilities](#rcrewai-07-capabilities)):
   - Agent config: reasoning, per-agent LLM, rate limiting, context-window trimming, cognitive memory
   - Task output: structured output schemas, guardrails, file output, multimodal attachments
   - Crew: `before_kickoff`/`after_kickoff` hooks, planning, the `consensual` process, batch execution
   - Knowledge (RAG) sources and Flow persistence
+  - Checkpointing with resume, LLM interceptors, and the Bedrock / Snowflake / OpenAI-compatible providers
 
 ## Observation Engine
 
@@ -103,14 +104,20 @@ $ rails db:migrate
 (The task name comes from the engine's railtie name, `rcrew_ai_rails`.)
 
 Rails copies only the migrations your app does not already have. Upgrading to
-0.7.0 from 0.6.x adds two:
+0.8.0 from 0.7.x adds one:
+
+| Migration | Purpose |
+|---|---|
+| `012_create_rcrewai_checkpoints` | `rcrewai_checkpoints`, `rcrewai_crews.checkpoint_enabled`, and `run_id`/`parent_run_id` on executions — checkpointing and resume |
+
+Upgrading from 0.6.x adds two more:
 
 | Migration | Purpose |
 |---|---|
 | `010_create_rcrewai_spans` | `rcrewai_spans` and `rcrewai_span_events` — the observation engine's trace tree |
 | `011_add_observation_rollups_to_rcrewai_executions` | `total_cost_usd`, `total_tokens`, `span_count`, `error_count` on executions |
 
-Both are additive: no existing column or table is changed, and nothing is
+All are additive: no existing column or table is changed, and nothing is
 dropped. Existing crews, agents, tasks, and executions are unaffected, and
 observation is enabled by default once the tables exist. To upgrade the gem
 without turning tracing on, set `config.observation_enabled = false` in
@@ -269,10 +276,86 @@ crew.execute_sync(inputs)
 CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
 ```
 
+## rcrewai 0.8 capabilities
+
+This engine tracks [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.8`.
+
+### Checkpointing and resume
+
+A crew run can record durable per-task state, so an interrupted run resumes
+instead of re-executing (and re-paying for) the tasks that already finished.
+Checkpoints are written to `rcrewai_checkpoints` after each task settles.
+
+```ruby
+# Globally, in config/initializers/rcrewai.rb
+config.checkpoint_enabled = true
+
+# ...or per crew
+crew.update!(checkpoint_enabled: true)
+
+execution = crew.executions.order(:id).last
+execution.run_id          # => the checkpointed run
+
+# Resume it: completed tasks are replayed, the rest execute.
+crew.resume_sync(execution)     # or resume_async(execution)
+crew.resumable_executions       # executions that recorded a run id
+```
+
+A resumed run gets its own `run_id` and records the original in
+`parent_run_id`, leaving the first run's record intact:
+
+```ruby
+store = RcrewAI::Rails::ActiveRecordCheckpointStore.new
+RCrewAI::Checkpoint.lineage(store, resumed.run_id)
+# => ["<original run id>", "<resumed run id>"]
+```
+
+Any object responding to `save`/`load`/`list`/`delete` can replace the store via
+`config.checkpoint_store`.
+
+### LLM interceptors
+
+Hooks that run around every LLM request the engine's agents make — useful for
+logging, request tagging, or signing (AWS SigV4 for Bedrock, for instance).
+Return a replacement value to modify the payload or result, or `nil` to leave it
+untouched. A hook that raises is reported and skipped, so instrumentation can
+never break a run.
+
+```ruby
+config.llm_before_request = lambda do |payload, context|
+  Rails.logger.info("[llm] -> #{context[:provider]}/#{context[:model]}")
+  payload
+end
+
+config.llm_after_response = lambda do |result, context|
+  Rails.logger.info("[llm] <- #{context[:duration_ms]}ms")
+  result
+end
+```
+
+### Providers
+
+Alongside `openai`, `anthropic`, `google`, `azure` and `ollama`, rcrewai 0.8
+adds four, set as an agent's `llm_config` provider (or
+`config.default_llm_provider`):
+
+| Provider | Notes |
+|---|---|
+| `openai_compatible` | Any OpenAI-format endpoint (Groq, Together, Fireworks, vLLM, OpenRouter, a self-hosted gateway). Requires RCrewAI's `base_url`. |
+| `bedrock` | AWS Bedrock via the Converse API. Requires `aws_region`. |
+| `snowflake` | Snowflake Cortex inference. Requires `snowflake_account`. |
+| `openai_responses` | OpenAI's Responses API. Non-streaming only. |
+
+### Tracing accuracy
+
+rcrewai 0.8 stamps every event with the id of its enclosing run span, and the
+observation collector uses it to keep concurrent runs of the *same* agent apart.
+Previously both runs shared one span stack, so one run's tool call could nest
+under the other's iteration.
+
 ## rcrewai 0.7 capabilities
 
-This engine tracks [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.7`. The
-following capabilities are configured through columns on the persisted models and
+These capabilities are configured through columns on the persisted models and
 forwarded to the core objects at build time. All are **off/absent by default**, so
 existing records are unaffected — set only what you need.
 
@@ -376,6 +459,8 @@ The gem provides these ActiveRecord models:
 - `RcrewAI::Rails::KnowledgeSource` - Knowledge (RAG) sources, owned by an agent or a crew
 - `RcrewAI::Rails::FlowState` - Persisted rcrewai Flow state (resume flows across restarts)
 - `RcrewAI::Rails::FlowRun` - Flow-run tracking (status, inputs, result, timing)
+- `RcrewAI::Rails::Span` / `SpanEvent` - The observation engine's trace tree
+- `RcrewAI::Rails::Checkpoint` - Persisted crew checkpoints (resume and lineage)
 
 ## API Endpoints
 

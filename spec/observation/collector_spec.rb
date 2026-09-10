@@ -202,4 +202,80 @@ RSpec.describe RcrewAI::Rails::Observation::Collector do
       expect(execution.spans.llm_calls.first.parent_span_id).to eq(agent_span_id)
     end
   end
+
+  # rcrewai 0.8+ stamps every event with the id of the enclosing run span.
+  describe "concurrent runs of the same agent (rcrewai 0.8 event hierarchy)" do
+    let(:run_a) { SecureRandom.uuid }
+    let(:run_b) { SecureRandom.uuid }
+
+    it "nests each run's tool call under that run's own iteration" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_a))
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_b))
+
+      # Run A's tool call arrives while run B's iteration is the most recent.
+      collector.call(event(RCrewAI::Events::ToolCallStart, agent: "writer", iteration: 1,
+                           tool: "search", args: {}, call_id: "c1", parent_id: run_a))
+
+      llm_a, llm_b = execution.spans.llm_calls.order(:sequence).to_a
+      tool = execution.spans.tool_calls.first
+
+      expect(tool.parent_span_id).to eq(llm_a.id)
+      expect(tool.parent_span_id).not_to eq(llm_b.id)
+    end
+
+    it "closes each run's iteration independently" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_a))
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_b))
+      collector.call(event(RCrewAI::Events::IterationEnd, agent: "writer", iteration: 1,
+                           finish_reason: :stop, parent_id: run_a))
+
+      llm_a, llm_b = execution.spans.llm_calls.order(:sequence).to_a
+      expect(llm_a.reload.status).to eq("ok")
+      expect(llm_b.reload.status).to eq("running")
+    end
+
+    it "attributes usage to the emitting run" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_a))
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_b))
+      collector.call(event(RCrewAI::Events::Usage, agent: "writer", iteration: 1,
+                           prompt_tokens: 5, completion_tokens: 7, total_tokens: 12,
+                           cost_usd: 0.01, parent_id: run_a))
+
+      llm_a, llm_b = execution.spans.llm_calls.order(:sequence).to_a
+      expect(llm_a.reload.total_tokens).to eq(12)
+      expect(llm_b.reload.total_tokens).to be_nil
+    end
+
+    it "keeps buffered text separate per run" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_a))
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1, parent_id: run_b))
+      collector.call(event(RCrewAI::Events::TextDelta, agent: "writer", iteration: 1,
+                           text: "from-a", parent_id: run_a))
+      collector.call(event(RCrewAI::Events::TextDone, agent: "writer", iteration: 1,
+                           text: "", parent_id: run_a))
+
+      llm_a, llm_b = execution.spans.llm_calls.order(:sequence).to_a
+      expect(llm_a.reload.attributes_hash["text"]).to eq("from-a")
+      expect(llm_b.reload.attributes_hash).not_to have_key("text")
+    end
+
+    # Streams from before the hierarchy existed carry no parent_id at all.
+    it "still tracks a run whose events carry no parent_id" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "writer", iteration: 1,
+                           iteration_index: 1))
+      collector.call(event(RCrewAI::Events::ToolCallStart, agent: "writer", iteration: 1,
+                           tool: "search", args: {}, call_id: "c9"))
+
+      tool = execution.spans.tool_calls.first
+      expect(tool.parent_span_id).to eq(execution.spans.llm_calls.first.id)
+    end
+  end
 end

@@ -112,4 +112,95 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
       expect(crew.executions.order(:created_at).last.spans.running.count).to eq(0)
     end
   end
+
+  describe "inputs" do
+    it "forwards the execution inputs to the crew so before_kickoff hooks see them" do
+      agent = crew.agents.create!(name: "a", role: "Worker")
+      crew.tasks.create!(description: "do it", expected_output: "ok", agent: agent)
+
+      seen = nil
+      allow_any_instance_of(RCrewAI::Crew).to receive(:execute).and_wrap_original do |original, **kwargs|
+        seen = kwargs[:inputs]
+        original.call(**kwargs)
+      end
+
+      described_class.new.perform(crew, { "topic" => "ruby" })
+
+      expect(seen).to eq({ "topic" => "ruby" })
+    end
+  end
+
+  describe "checkpointing" do
+    let(:crew) do
+      RcrewAI::Rails::Crew.create!(name: "C", process_type: "sequential", checkpoint_enabled: true)
+    end
+
+    before do
+      agent = crew.agents.create!(name: "a", role: "Worker")
+      crew.tasks.create!(description: "first", expected_output: "ok", agent: agent)
+      crew.tasks.create!(description: "second", expected_output: "ok", agent: agent)
+    end
+
+    it "persists a checkpoint and records the run id on the execution" do
+      described_class.new.perform(crew)
+
+      execution = crew.executions.order(:id).last
+      expect(execution.run_id).to be_present
+
+      checkpoint = RcrewAI::Rails::Checkpoint.find_by(run_id: execution.run_id)
+      expect(checkpoint).to be_present
+      expect(checkpoint.crew_name).to eq("C")
+      expect(checkpoint.completed_task_names.size).to eq(2)
+    end
+
+    it "writes no checkpoint when the crew has not opted in" do
+      crew.update!(checkpoint_enabled: false)
+
+      described_class.new.perform(crew)
+
+      expect(RcrewAI::Rails::Checkpoint.count).to eq(0)
+      expect(crew.executions.order(:id).last.run_id).to be_nil
+    end
+
+    it "replays completed tasks on resume instead of re-executing them" do
+      described_class.new.perform(crew)
+      original = crew.executions.order(:id).last
+
+      restored = nil
+      allow_any_instance_of(RCrewAI::Crew).to receive(:resume).and_wrap_original do |original_method, *args, **kwargs|
+        result = original_method.call(*args, **kwargs)
+        restored = original_method.receiver.restored_task_names
+        result
+      end
+
+      crew.resume_sync(original)
+
+      expect(restored).to contain_exactly("task_1", "task_2")
+
+      resumed = crew.executions.order(:id).last
+      expect(resumed.parent_run_id).to eq(original.run_id)
+      expect(resumed.run_id).to be_present
+      expect(resumed.run_id).not_to eq(original.run_id)
+      expect(resumed.status).to eq("completed")
+    end
+
+    it "links the resumed run to its parent so lineage walks the chain" do
+      described_class.new.perform(crew)
+      original = crew.executions.order(:id).last
+
+      crew.resume_sync(original)
+      resumed = crew.executions.order(:id).last
+
+      store = RcrewAI::Rails::ActiveRecordCheckpointStore.new
+      expect(RCrewAI::Checkpoint.lineage(store, resumed.run_id))
+        .to eq([original.run_id, resumed.run_id])
+    end
+
+    it "exposes resumable executions and rejects a run with no id" do
+      described_class.new.perform(crew)
+
+      expect(crew.resumable_executions.pluck(:run_id).compact).to be_present
+      expect { crew.resume_sync(nil) }.to raise_error(ArgumentError, /no checkpoint run id/)
+    end
+  end
 end
