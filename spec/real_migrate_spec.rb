@@ -35,6 +35,11 @@ RSpec.describe "running the generated migration the way Rails does" do
     expect { context.migrate }.not_to raise_error
 
     tables = conn.tables.grep(/rcrewai/)
-    expect(tables).to include("rcrewai_crews", "rcrewai_spans", "rcrewai_span_events", "rcrewai_tools")
+    expect(tables).to include("rcrewai_crews", "rcrewai_spans", "rcrewai_span_events", "rcrewai_tools",
+                              "rcrewai_checkpoints")
+
+    # rcrewai 0.8 checkpointing columns.
+    expect(conn.columns("rcrewai_executions").map(&:name)).to include("run_id", "parent_run_id")
+    expect(conn.columns("rcrewai_crews").map(&:name)).to include("checkpoint_enabled")
   end
 end

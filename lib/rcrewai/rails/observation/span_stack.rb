@@ -23,17 +23,34 @@ module RcrewAI
 
         # Normalizes an agent key. Blank/nil agents share a single reserved
         # bucket that cannot collide with a real agent name.
-        def self.key_for(agent)
+        def self.key_for(agent, run_id = nil)
           key = agent.to_s
-          key.empty? ? UNTAGGED : key
+          key = UNTAGGED if key.empty?
+          # rcrewai 0.8+ stamps every event with the id of the enclosing run
+          # span. Scoping the stack by it keeps two concurrent runs of the
+          # *same* agent apart -- keyed on name alone they share one stack, so
+          # one run's tool call nests under the other's iteration. Events from
+          # older streams (and the engine's own crew/agent spans) carry no run
+          # id and keep the previous name-only key.
+          run = run_id.to_s
+          run.empty? ? key : "#{key}\u0000#{run}"
+        end
+
+        # The run-span id an event belongs to, or nil for events that predate
+        # the 0.8 event hierarchy or are emitted outside a runner span.
+        def self.run_id_for(event)
+          return nil unless event.respond_to?(:parent_id)
+
+          id = event.parent_id
+          id.nil? || id.to_s.empty? ? nil : id
         end
 
         def next_sequence
           @mutex.synchronize { @sequence += 1 }
         end
 
-        def push(agent:, key:, id:)
-          @mutex.synchronize { @stacks[self.class.key_for(agent)] << { key: key, id: id } }
+        def push(agent:, key:, id:, run_id: nil)
+          @mutex.synchronize { @stacks[self.class.key_for(agent, run_id)] << { key: key, id: id } }
           id
         end
 
@@ -41,9 +58,9 @@ module RcrewAI
         #
         # Reads use +fetch+ rather than +[]+: the default block auto-vivifies
         # on read, so querying unknown agents would retain a key forever.
-        def pop(agent:, key:)
+        def pop(agent:, key:, run_id: nil)
           @mutex.synchronize do
-            stack = @stacks.fetch(self.class.key_for(agent), nil)
+            stack = @stacks.fetch(self.class.key_for(agent, run_id), nil)
             next nil if stack.nil?
 
             index = stack.rindex { |frame| frame[:key] == key }
@@ -53,8 +70,8 @@ module RcrewAI
           end
         end
 
-        def current(agent:)
-          @mutex.synchronize { @stacks.fetch(self.class.key_for(agent), nil)&.last&.fetch(:id) }
+        def current(agent:, run_id: nil)
+          @mutex.synchronize { @stacks.fetch(self.class.key_for(agent, run_id), nil)&.last&.fetch(:id) }
         end
 
         def register_call(call_id:, span_id:)

@@ -61,6 +61,22 @@ module RcrewAI
         CrewExecutionJob.perform_now(self, inputs)
       end
 
+      # Re-runs a checkpointed execution, replaying tasks that already
+      # completed instead of paying for them again. Accepts either a run id or
+      # an Execution that recorded one.
+      def resume_async(run, inputs = {})
+        CrewExecutionJob.perform_later(self, inputs, resume_run_id: run_id_for(run))
+      end
+
+      def resume_sync(run, inputs = {})
+        CrewExecutionJob.perform_now(self, inputs, resume_run_id: run_id_for(run))
+      end
+
+      # Executions of this crew that recorded a checkpoint run id, newest first.
+      def resumable_executions
+        executions.where.not(run_id: nil).order(created_at: :desc)
+      end
+
       def execute_batch_async(inputs_list)
         batch_id = SecureRandom.uuid
         normalize_batch_inputs(inputs_list).each do |inputs|
@@ -96,6 +112,15 @@ module RcrewAI
       end
 
       private
+
+      # Accepts an Execution or a bare run id, so callers can pass whichever
+      # they have without unwrapping it themselves.
+      def run_id_for(run)
+        id = run.respond_to?(:run_id) ? run.run_id : run
+        raise ArgumentError, "no checkpoint run id to resume from" if id.blank?
+
+        id
+      end
 
       # Wraps a single inputs hash into a one-element array; leaves an array of
       # hashes as-is. Avoids Array()'s hash-destructuring (Array({a:1}) => [[:a,1]]).

@@ -76,6 +76,10 @@ module RcrewAI
       protected
 
       def build_agent
+        RcrewAI::Rails::Interceptors.apply_to_agent(new_rcrew_agent)
+      end
+
+      def new_rcrew_agent
         RCrewAI::Agent.new(
           name: @attributes[:name] || default_agent_name,
           role: @attributes[:role] || self.class.agent_role,

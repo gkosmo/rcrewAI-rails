@@ -16,6 +16,7 @@ class CreateRcrewAITables < ActiveRecord::Migration[7.0]
       t.string :after_kickoff_class
       t.string :after_kickoff_method
       t.text :config
+      t.boolean :checkpoint_enabled
       t.boolean :active, default: true
 
       t.timestamps
@@ -112,6 +113,8 @@ class CreateRcrewAITables < ActiveRecord::Migration[7.0]
       t.integer :total_tokens
       t.integer :span_count, default: 0, null: false
       t.integer :error_count, default: 0, null: false
+      t.string :run_id
+      t.string :parent_run_id
 
       t.timestamps
     end
@@ -119,6 +122,7 @@ class CreateRcrewAITables < ActiveRecord::Migration[7.0]
     add_index :rcrewai_executions, :status
     add_index :rcrewai_executions, :created_at
     add_index :rcrewai_executions, :batch_id
+    add_index :rcrewai_executions, :run_id
 
     create_table :rcrewai_execution_logs do |t|
       t.references :execution, null: false, foreign_key: { to_table: :rcrewai_executions }
@@ -203,6 +207,19 @@ class CreateRcrewAITables < ActiveRecord::Migration[7.0]
     add_index :rcrewai_spans, :kind
     add_index :rcrewai_spans, :status
     add_index :rcrewai_spans, %i[execution_id sequence]
+
+    create_table :rcrewai_checkpoints do |t|
+      t.string :run_id, null: false
+      t.string :parent_run_id
+      t.string :crew_name
+      t.text :data, null: false
+      t.datetime :checkpoint_updated_at
+
+      t.timestamps
+    end
+
+    add_index :rcrewai_checkpoints, :run_id, unique: true
+    add_index :rcrewai_checkpoints, :parent_run_id
 
     create_table :rcrewai_span_events do |t|
       t.references :span, null: false, foreign_key: { to_table: :rcrewai_spans }

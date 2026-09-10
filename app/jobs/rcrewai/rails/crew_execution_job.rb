@@ -5,7 +5,7 @@ module RcrewAI
 
       retry_on StandardError, wait: :exponentially_longer, attempts: 3
 
-      def perform(crew, inputs = {}, batch_id: nil)
+      def perform(crew, inputs = {}, batch_id: nil, resume_run_id: nil)
         execution = crew.executions.create!(
           status: "pending",
           inputs: inputs,
@@ -22,7 +22,16 @@ module RcrewAI
           collector = collector_for(execution)
           collector&.start_crew_span(crew_name: crew.name)
 
-          result = rcrew.execute(stream: collector)
+          store = checkpoint_store_for(crew)
+          result = if resume_run_id
+                     execution.update!(parent_run_id: resume_run_id)
+                     rcrew.resume(resume_run_id, checkpoint: store, stream: collector, inputs: inputs)
+                   else
+                     rcrew.execute(stream: collector, inputs: inputs, checkpoint: store)
+                   end
+          # The gem assigns the run id during execute, so it can only be
+          # recorded once the run has opened.
+          execution.update!(run_id: rcrew.run_id) if rcrew.run_id
 
           # Close agent spans as successful before finish!, which treats
           # anything still open as an aborted run.
@@ -49,6 +58,19 @@ module RcrewAI
       end
 
       private
+
+      # The checkpoint store for this run, or nil when checkpointing is off.
+      # A crew may opt in per-record; otherwise the engine default applies.
+      def checkpoint_store_for(crew)
+        enabled = if crew.respond_to?(:checkpoint_enabled) && !crew.checkpoint_enabled.nil?
+                    crew.checkpoint_enabled
+                  else
+                    RcrewAI::Rails.config.checkpoint_enabled
+                  end
+        return nil unless enabled
+
+        RcrewAI::Rails.config.checkpoint_store || ActiveRecordCheckpointStore.new
+      end
 
       # Translates rcrewai events into the span tree. Returns nil when
       # observation is disabled so no sink is attached at all.

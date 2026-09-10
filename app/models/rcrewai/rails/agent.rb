@@ -17,6 +17,10 @@ module RcrewAI
       scope :active, -> { where(active: true) }
 
       def to_rcrew_agent
+        Interceptors.apply_to_agent(build_rcrew_agent)
+      end
+
+      def build_rcrew_agent
         RCrewAI::Agent.new(
           name: name,
           role: role,

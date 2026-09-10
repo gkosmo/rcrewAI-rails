@@ -7,7 +7,9 @@ module RcrewAI
                     :default_memory_embedder, :default_memory_store,
                     :observation_enabled, :observation_capture_prompts,
                     :observation_prompt_max_bytes, :observation_flush_mode,
-                    :observation_flush_every, :observation_retention_days
+                    :observation_flush_every, :observation_retention_days,
+                    :checkpoint_enabled, :checkpoint_store,
+                    :llm_before_request, :llm_after_response
 
       def initialize
         @job_queue_name = "default"
@@ -28,6 +30,16 @@ module RcrewAI
         @observation_flush_mode = :batched # :batched | :immediate
         @observation_flush_every = 25
         @observation_retention_days = 30
+        # Checkpointing (rcrewai 0.8+). Off by default: it writes a row per
+        # task settlement, which an app should opt into rather than inherit.
+        @checkpoint_enabled = false
+        # Defaults to ActiveRecordCheckpointStore when checkpointing is on.
+        # Set to any object responding to save/load/list/delete to override.
+        @checkpoint_store = nil
+        # LLM interceptor hooks (rcrewai 0.8+). Each is a callable, or an
+        # array of callables, applied to every client the engine builds.
+        @llm_before_request = nil
+        @llm_after_response = nil
       end
     end
   end
