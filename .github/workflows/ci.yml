@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # rcrewai now ships to rubygems, so the gemspec dep (`rcrewai ~> 0.7.1`)
+      # rcrewai now ships to rubygems, so the gemspec dep (`rcrewai ~> 0.8.0`)
       # resolves from there. The sibling-checkout workaround this job used while
       # the gem was unpublished has been removed.
       - name: Set up Ruby
