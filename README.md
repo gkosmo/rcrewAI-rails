@@ -10,12 +10,13 @@ Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewai-rails) 
 - **Web UI**: Monitor and manage crews through a built-in interface
 - **Rails-Specific Tools**: Pre-built tools for ActiveRecord, ActionMailer, Rails cache, and more
 - **Configuration**: Flexible configuration through Rails initializers
-- **Full rcrewai 0.8 feature coverage** (see [rcrewai 0.8 capabilities](#rcrewai-08-capabilities) and [rcrewai 0.7 capabilities](#rcrewai-07-capabilities)):
+- **Full rcrewai 0.9 feature coverage** (see [rcrewai 0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities) capabilities):
   - Agent config: reasoning, per-agent LLM, rate limiting, context-window trimming, cognitive memory
   - Task output: structured output schemas, guardrails, file output, multimodal attachments
   - Crew: `before_kickoff`/`after_kickoff` hooks, planning, the `consensual` process, batch execution
   - Knowledge (RAG) sources and Flow persistence
   - Checkpointing with resume, LLM interceptors, and the Bedrock / Snowflake / OpenAI-compatible providers
+  - Concurrent tool calls, with a per-agent opt-out
 
 ## Observation Engine
 
@@ -104,7 +105,13 @@ $ rails db:migrate
 (The task name comes from the engine's railtie name, `rcrew_ai_rails`.)
 
 Rails copies only the migrations your app does not already have. Upgrading to
-0.8.0 from 0.7.x adds one:
+0.9.0 from 0.8.x adds one:
+
+| Migration | Purpose |
+|---|---|
+| `013_add_parallel_tools_to_rcrewai_agents` | `rcrewai_agents.parallel_tools` — per-agent opt-out from concurrent tool calls |
+
+Upgrading from 0.7.x adds one more:
 
 | Migration | Purpose |
 |---|---|
@@ -276,9 +283,27 @@ crew.execute_sync(inputs)
 CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
 ```
 
-## rcrewai 0.8 capabilities
+## rcrewai 0.9 capabilities
 
-This engine tracks [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.8`.
+This engine tracks [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.9`.
+
+### Concurrency
+
+rcrewai 0.9 runs a turn's tool calls concurrently, so a turn costs the slowest
+call rather than the sum. This is on by default and needs no configuration.
+
+Opt an agent out when its tools are not safe to run in parallel, or must not
+fan out against a rate-limited API:
+
+```ruby
+agent.update!(parallel_tools: false)
+```
+
+Left `nil` (the default), the gem's own default applies. The observation
+engine attributes concurrent tool calls correctly — each tool span is matched
+to its result by `call_id`, not by arrival order.
+
+## rcrewai 0.8 capabilities
 
 ### Checkpointing and resume
 
@@ -371,6 +396,7 @@ existing records are unaffected — set only what you need.
 | `max_rpm` | Rate-limit the agent's LLM calls (requests per minute) |
 | `reasoning` / `max_reasoning_attempts` | Run a planning/reasoning pass before answering |
 | `respect_context_window` | Trim history to fit the model's context window |
+| `parallel_tools` | Run a turn's tool calls concurrently (rcrewai 0.9; `nil` uses the gem default of on) |
 | `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-sonnet-5" }` |
 | `memory_enabled` + `memory_scope` + `memory_short_term_limit` | Enable cognitive memory (see below) |
 

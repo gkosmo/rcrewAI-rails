@@ -51,6 +51,7 @@ RSpec.describe RcrewAI::Rails::Agent, type: :model do
       expect(captured).not_to have_key(:reasoning)
       expect(captured).not_to have_key(:max_reasoning_attempts)
       expect(captured).not_to have_key(:respect_context_window)
+      expect(captured).not_to have_key(:parallel_tools)
       expect(captured).not_to have_key(:llm)
     end
 
@@ -95,6 +96,31 @@ RSpec.describe RcrewAI::Rails::Agent, type: :model do
 
       expect(captured).not_to have_key(:reasoning)
       expect(captured).not_to have_key(:max_reasoning_attempts)
+    end
+
+    # rcrewai 0.9 runs a turn's tool calls concurrently by default.
+    it "forwards parallel_tools: false so an agent can opt out of concurrency" do
+      captured = nil
+      allow(RCrewAI::Agent).to receive(:new).and_wrap_original do |orig, **kwargs|
+        captured = kwargs
+        orig.call(**kwargs)
+      end
+
+      build_agent(parallel_tools: false).to_rcrew_agent
+
+      expect(captured[:parallel_tools]).to be(false)
+    end
+
+    it "forwards parallel_tools: true when explicitly set" do
+      captured = nil
+      allow(RCrewAI::Agent).to receive(:new).and_wrap_original do |orig, **kwargs|
+        captured = kwargs
+        orig.call(**kwargs)
+      end
+
+      build_agent(parallel_tools: true).to_rcrew_agent
+
+      expect(captured[:parallel_tools]).to be(true)
     end
 
     it "forwards respect_context_window when enabled" do

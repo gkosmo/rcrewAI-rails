@@ -278,4 +278,77 @@ RSpec.describe RcrewAI::Rails::Observation::Collector do
       expect(tool.parent_span_id).to eq(execution.spans.llm_calls.first.id)
     end
   end
+
+  # rcrewai 0.9 runs a turn's tool calls concurrently, emitting their events
+  # from worker threads. The gem carries the run span across that boundary,
+  # so the collector must still attribute them correctly.
+  describe "concurrent tool calls in one turn (rcrewai 0.9)" do
+    let(:run) { SecureRandom.uuid }
+
+    it "nests every concurrent tool call under the same iteration" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "w", iteration: 1,
+                           iteration_index: 1, parent_id: run))
+
+      # Interleaved the way two worker threads would emit: both start, then
+      # both finish out of order.
+      collector.call(event(RCrewAI::Events::ToolCallStart, agent: "w", iteration: 1,
+                           tool: "alpha", args: {}, call_id: "c1", parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallStart, agent: "w", iteration: 1,
+                           tool: "beta", args: {}, call_id: "c2", parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallResult, agent: "w", iteration: 1,
+                           tool: "beta", call_id: "c2", result: "b", duration_ms: 5, parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallResult, agent: "w", iteration: 1,
+                           tool: "alpha", call_id: "c1", result: "a", duration_ms: 9, parent_id: run))
+
+      llm = execution.spans.llm_calls.first
+      tools = execution.spans.tool_calls.order(:sequence).to_a
+
+      expect(tools.map(&:name)).to contain_exactly("alpha", "beta")
+      expect(tools.map(&:parent_span_id).uniq).to eq([llm.id])
+      # Each result lands on its own span, matched by call_id rather than order.
+      expect(tools.map { |t| t.reload.attributes_hash["result"] }).to contain_exactly("a", "b")
+      expect(tools.map { |t| t.reload.status }).to eq(%w[ok ok])
+    end
+
+    it "keeps a failing concurrent tool from affecting its sibling" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "w", iteration: 1,
+                           iteration_index: 1, parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallStart, agent: "w", iteration: 1,
+                           tool: "alpha", args: {}, call_id: "c1", parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallStart, agent: "w", iteration: 1,
+                           tool: "beta", args: {}, call_id: "c2", parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallError, agent: "w", iteration: 1,
+                           tool: "beta", call_id: "c2", error: "boom", parent_id: run))
+      collector.call(event(RCrewAI::Events::ToolCallResult, agent: "w", iteration: 1,
+                           tool: "alpha", call_id: "c1", result: "a", duration_ms: 3, parent_id: run))
+
+      by_name = execution.spans.tool_calls.index_by(&:name)
+      expect(by_name["beta"].reload.status).to eq("error")
+      expect(by_name["alpha"].reload.status).to eq("ok")
+    end
+
+    # The collector is handed to the gem as a sink and, under 0.9, is reached
+    # from worker threads. Events.fan_out serializes delivery, but the
+    # collector must not corrupt its own state if called concurrently.
+    it "survives concurrent delivery from multiple threads" do
+      collector.call(event(RCrewAI::Events::IterationStart, agent: "w", iteration: 1,
+                           iteration_index: 1, parent_id: run))
+
+      threads = 8.times.map do |i|
+        Thread.new do
+          collector.call(event(RCrewAI::Events::ToolCallStart, agent: "w", iteration: 1,
+                               tool: "t#{i}", args: {}, call_id: "call-#{i}", parent_id: run))
+          collector.call(event(RCrewAI::Events::ToolCallResult, agent: "w", iteration: 1,
+                               tool: "t#{i}", call_id: "call-#{i}", result: "r#{i}",
+                               duration_ms: 1, parent_id: run))
+        end
+      end
+      threads.each(&:join)
+
+      tools = execution.spans.tool_calls
+      expect(tools.count).to eq(8)
+      expect(tools.map(&:status).uniq).to eq(["ok"])
+      expect(tools.map(&:parent_span_id).uniq).to eq([execution.spans.llm_calls.first.id])
+    end
+  end
 end
