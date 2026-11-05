@@ -7,6 +7,7 @@ module RcrewAI
 
       validates :name, presence: true
       validates :tool_class, presence: true
+      validate :tool_class_allowed, if: :tool_class_changed?
 
       serialize :config, coder: JSON
 
@@ -15,11 +16,17 @@ module RcrewAI
       def instantiated_tool
         return nil if tool_class.blank?
         
-        klass = tool_class.constantize
-        params = config || {}
-        klass.new(**params.symbolize_keys)
+        ToolAllowlist.build(tool_class, config)
       rescue NameError
         nil
+      end
+
+      private
+
+      def tool_class_allowed
+        return if tool_class.blank? || ToolAllowlist.allowed?(tool_class)
+
+        errors.add(:tool_class, "is not an allowed tool class")
       end
     end
   end

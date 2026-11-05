@@ -10,7 +10,7 @@ module RcrewAI
                     :observation_flush_every, :observation_retention_days,
                     :checkpoint_enabled, :checkpoint_store,
                     :llm_before_request, :llm_after_response,
-                    :authenticate_with
+                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools
 
       def initialize
         @job_queue_name = "default"
@@ -45,6 +45,11 @@ module RcrewAI
         # the request through; anything else is a 403, unless it already
         # responded. With nil, only development is allowed.
         @authenticate_with = nil
+        # Tool classes that a stored name may load. Empty until the host says.
+        @allowed_tool_classes = []
+        # ->(agent) { [tools or connected MCP clients] }. The host owns the
+        # connections, so nothing a form submits can start a process.
+        @agent_mcp_tools = nil
       end
     end
   end

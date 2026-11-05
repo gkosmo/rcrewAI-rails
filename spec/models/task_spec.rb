@@ -30,6 +30,8 @@ RSpec.describe RcrewAI::Rails::Task, type: :model do
     end
 
     it "passes through tools and context" do
+      require "rcrewai/rails/tools/rails_logger_tool"
+      RcrewAI::Rails.config.allowed_tool_classes = ["RcrewAI::Rails::Tools::RailsLoggerTool"]
       record = crew.tasks.create!(
         description: "log it",
         expected_output: "ok",
@@ -40,6 +42,8 @@ RSpec.describe RcrewAI::Rails::Task, type: :model do
       rcrew = record.to_rcrew_task
       expect(rcrew.context).to eq(["task_1"])
       expect(rcrew.tools.first).to be_a(RcrewAI::Rails::Tools::RailsLoggerTool)
+    ensure
+      RcrewAI::Rails.config.allowed_tool_classes = []
     end
   end
 
