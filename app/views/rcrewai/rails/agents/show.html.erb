@@ -53,14 +53,9 @@
           <%= @agent.allow_delegation ? 'Enabled' : 'Disabled' %>
         </span>
       </div>
-      <% if @agent.max_iter %>
+      <% if @agent.max_iterations %>
         <div class="detail-item">
-          <strong>Max Iterations:</strong> <%= @agent.max_iter %>
-        </div>
-      <% end %>
-      <% if @agent.max_execution_time %>
-        <div class="detail-item">
-          <strong>Max Execution Time:</strong> <%= @agent.max_execution_time %> seconds
+          <strong>Max Iterations:</strong> <%= @agent.max_iterations %>
         </div>
       <% end %>
     </div>
@@ -73,12 +68,6 @@
     </div>
   <% end %>
 
-  <% if @agent.tools_config.present? %>
-    <div class="detail-section">
-      <h3>Tools Configuration</h3>
-      <pre class="code-block"><%= JSON.pretty_generate(@agent.tools_config) %></pre>
-    </div>
-  <% end %>
 </div>
 
 <div class="related-sections">
@@ -130,7 +119,6 @@
 </div>
 
 <div class="danger-zone">
-  <%= link_to "Delete Agent", @agent, method: :delete, 
-      confirm: "Are you sure you want to delete this agent? This action cannot be undone.", 
+  <%= link_to "Delete Agent", @agent, data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete this agent? This action cannot be undone." }, 
       class: "btn btn-danger" %>
 </div>

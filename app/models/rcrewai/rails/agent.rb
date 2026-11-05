@@ -72,13 +72,16 @@ module RcrewAI
       end
 
       def instantiated_tools
-        return [] if tools.blank?
+        tools.active.filter_map(&:instantiated_tool) + mcp_tools
+      end
 
-        tools.map do |tool_config|
-          tool_class = tool_config["class"].constantize
-          tool_params = tool_config["params"] || {}
-          tool_class.new(**tool_params.symbolize_keys)
-        end
+      # Tools from the host's config.agent_mcp_tools: tool objects or connected
+      # RCrewAI::MCP::Client instances.
+      def mcp_tools
+        hook = RcrewAI::Rails.config.agent_mcp_tools
+        return [] unless hook
+
+        Array(hook.call(self)).flat_map { |entry| entry.respond_to?(:tools) ? entry.tools : entry }
       end
 
       def add_tool(tool_class, params = {})

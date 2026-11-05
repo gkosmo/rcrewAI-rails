@@ -4,6 +4,8 @@ module RcrewAI
   module Rails
     module Generators
       class CrewGenerator < ::Rails::Generators::NamedBase
+        namespace "rcrewai:rails:crew"
+
         source_root File.expand_path("templates", __dir__)
 
         argument :process_type, type: :string, default: "sequential", banner: "sequential|hierarchical"

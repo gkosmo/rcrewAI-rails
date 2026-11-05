@@ -30,6 +30,7 @@ module RcrewAI
           async: async_execution,
           tools: instantiated_tools,
           callback: callback_method,
+          max_retries: RcrewAI::Rails.config.task_max_retries,
           **task_output_options
         )
       end
@@ -55,11 +56,7 @@ module RcrewAI
       def instantiated_tools
         return [] if tools.blank?
 
-        tools.map do |tool_config|
-          tool_class = tool_config["class"].constantize
-          tool_params = tool_config["params"] || {}
-          tool_class.new(**tool_params.symbolize_keys)
-        end
+        tools.map { |tool_config| ToolAllowlist.build(tool_config["class"], tool_config["params"]) }
       end
 
       def add_dependency(other_task)

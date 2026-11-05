@@ -1,0 +1,41 @@
+/* The dashboard's own styles, served by AssetsController. Plain layout only. */
+:root { --rc-ink: #1f2933; --rc-muted: #616e7c; --rc-line: #d9e2ec; --rc-bg: #f5f7fa; --rc-accent: #2f5fb3; --rc-ok: #1e7f4f; --rc-bad: #b42318; --rc-warn: #b54708; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, sans-serif; color: var(--rc-ink); background: var(--rc-bg); }
+a { color: var(--rc-accent); }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+main.container { padding-top: 24px; padding-bottom: 48px; }
+.navbar { background: #fff; border-bottom: 1px solid var(--rc-line); }
+.navbar .container { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; min-height: 52px; }
+.navbar-brand { font-weight: 700; text-decoration: none; color: var(--rc-ink); }
+.navbar-menu { display: flex; flex-wrap: wrap; gap: 16px; }
+.navbar-item { text-decoration: none; }
+.page-header, .section-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.actions, .crew-actions, .agent-actions, .task-actions, .tool-actions, .form-actions, .dependency-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.crew-card, .agent-card, .task-card, .tool-card, .section, .detail-section, .related-sections, .form-container, .empty-state, .danger-zone, .status-banner { background: #fff; border: 1px solid var(--rc-line); border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+.crews-grid, .agents-grid, .tools-grid, .details-grid, .metadata-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.crew-meta, .agent-meta, .task-meta, .tool-meta, .metadata, .meta-item, .log-timestamp, .form-help, .span-duration, .span-cost, .span-tokens { color: var(--rc-muted); font-size: 13px; }
+.btn { display: inline-block; padding: 6px 12px; border: 1px solid var(--rc-line); border-radius: 4px; background: #fff; color: var(--rc-ink); font: inherit; text-decoration: none; cursor: pointer; }
+.btn-sm { padding: 3px 8px; font-size: 13px; }
+.btn-primary { background: var(--rc-accent); border-color: var(--rc-accent); color: #fff; }
+.btn-success { background: var(--rc-ok); border-color: var(--rc-ok); color: #fff; }
+.btn-danger { background: var(--rc-bad); border-color: var(--rc-bad); color: #fff; }
+.btn-secondary { background: var(--rc-bg); }
+.badge, .status-badge, .role-badge, .class-badge, .dependency-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--rc-line); font-size: 12px; }
+.badge-success { background: #d3f0e0; color: var(--rc-ok); }
+.badge-warning { background: #fdecd2; color: var(--rc-warn); }
+.badge-info { background: #dbe7fb; color: var(--rc-accent); }
+.badge-secondary { background: var(--rc-line); color: var(--rc-muted); }
+.notice { background: #d3f0e0; border-radius: 4px; padding: 8px 12px; margin-bottom: 16px; }
+.alert, .alert-error, .error-section { background: #fde4e1; color: var(--rc-bad); border-radius: 4px; padding: 8px 12px; margin-bottom: 16px; }
+.table, .data-table, .executions-table { width: 100%; border-collapse: collapse; background: #fff; }
+.table th, .table td, .data-table th, .data-table td, .executions-table th, .executions-table td { padding: 8px 10px; border-bottom: 1px solid var(--rc-line); text-align: left; }
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-weight: 600; margin-bottom: 4px; }
+.form-input, .form-select { width: 100%; padding: 6px 8px; border: 1px solid var(--rc-line); border-radius: 4px; font: inherit; }
+.code-block, .task-output, .span-attributes, .logs-container { background: #1f2933; color: #f5f7fa; padding: 12px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, monospace; }
+.log-entry { padding: 2px 0; }
+.span-tree { list-style: none; padding-left: 16px; }
+.span-row, .span-line { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; padding: 3px 0; }
+.span-kind { color: var(--rc-muted); font-size: 12px; }
+.filters, .log-filters, .filter-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }

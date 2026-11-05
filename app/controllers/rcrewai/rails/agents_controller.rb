@@ -56,7 +56,7 @@ module RcrewAI
       def agent_params
         params.require(:agent).permit(
           :name, :role, :goal, :backstory, :verbose, :allow_delegation, 
-          :max_iter, :max_execution_time, :llm_config, :tools_config, :active
+          :max_iterations, :llm_config, :active
         )
       end
     end

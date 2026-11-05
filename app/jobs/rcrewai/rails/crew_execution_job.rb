@@ -7,7 +7,9 @@ module RcrewAI
 
       queue_as { RcrewAI::Rails.config.job_queue_name }
 
-      retry_on StandardError, wait: :exponentially_longer, attempts: 3
+      # Off by default, because a run can have side effects. See retry_or_raise.
+      rescue_from(StandardError) { |error| retry_or_raise(error) }
+
       # A missing table is a configuration problem: retrying cannot fix it and
       # only delays the error the operator needs to see.
       discard_on CheckpointTableMissing
@@ -19,6 +21,7 @@ module RcrewAI
           batch_id: batch_id
         )
         collector = nil
+        rcrew = nil
 
         begin
           execution.start!
@@ -55,6 +58,7 @@ module RcrewAI
         rescue => e
           collector&.finish!
           execution.fail!(e)
+          record_run_for_retry(execution, rcrew)
           execution.log("error", "Crew execution failed", {
             error: e.message,
             backtrace: e.backtrace&.first(5)
@@ -65,6 +69,28 @@ module RcrewAI
       end
 
       private
+
+      # Retries when the host opted in with config.crew_job_attempts. With a
+      # checkpoint to resume from, tasks that finished aren't run again, tools
+      # included. Without one, the whole run repeats.
+      def retry_or_raise(error)
+        raise error if executions >= RcrewAI::Rails.config.crew_job_attempts
+
+        resume_from(@failed_run_id) if @failed_run_id
+        retry_job(wait: RcrewAI::Rails.config.crew_job_retry_wait * (2**(executions - 1)), error: error)
+      end
+
+      def record_run_for_retry(execution, rcrew)
+        return unless rcrew&.run_id
+
+        execution.update!(run_id: rcrew.run_id)
+        @failed_run_id = rcrew.run_id if checkpoint_store_for(execution.crew)
+      end
+
+      def resume_from(run_id)
+        crew, inputs, options = arguments
+        self.arguments = [crew, inputs || {}, Hash.ruby2_keywords_hash((options || {}).merge(resume_run_id: run_id))]
+      end
 
       # The checkpoint store for this run, or nil when checkpointing is off.
       # A crew may opt in per-record; otherwise the engine default applies.

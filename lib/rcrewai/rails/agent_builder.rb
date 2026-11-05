@@ -105,7 +105,8 @@ module RcrewAI
           when Hash
             klass = tool_class[:class] || tool_class["class"]
             params = tool_class[:params] || tool_class["params"] || {}
-            klass = klass.constantize if klass.is_a?(String)
+            next ToolAllowlist.build(klass, params) if klass.is_a?(String)
+
             klass.new(**params.symbolize_keys)
           else
             tool_class

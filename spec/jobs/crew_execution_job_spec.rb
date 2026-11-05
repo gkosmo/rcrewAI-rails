@@ -246,4 +246,104 @@ RSpec.describe RcrewAI::Rails::CrewExecutionJob, type: :job do
       expect(crew.executions.order(:id).last.status).to eq("completed")
     end
   end
+
+  describe "retries" do
+    include ActiveJob::TestHelper
+
+    let(:config) { RcrewAI::Rails.config }
+
+    before do
+      agent = crew.agents.create!(name: "a", role: "Worker")
+      crew.tasks.create!(description: "do it", expected_output: "ok", agent: agent)
+    end
+
+    after do
+      config.crew_job_attempts = 1
+      clear_enqueued_jobs
+    end
+
+    it "does not retry a failed run by default" do
+      allow_any_instance_of(RCrewAI::Crew).to receive(:execute).and_raise("boom")
+
+      expect { described_class.perform_now(crew) }.to raise_error("boom")
+      expect(enqueued_jobs).to be_empty
+      expect(crew.executions.count).to eq(1)
+    end
+
+    it "tells the core gem not to re-run a failed task by default" do
+      expect(crew.tasks.first.to_rcrew_task.instance_variable_get(:@max_retries)).to eq(0)
+    end
+
+    it "retries when the host opts in, up to the limit" do
+      config.crew_job_attempts = 2
+      allow_any_instance_of(RCrewAI::Crew).to receive(:execute).and_raise("boom")
+
+      described_class.perform_now(crew)
+      expect(enqueued_jobs.size).to eq(1)
+
+      expect { perform_enqueued_jobs }.to raise_error("boom")
+      expect(crew.executions.count).to eq(2)
+    end
+
+    it "still discards a missing checkpoint table instead of retrying" do
+      config.crew_job_attempts = 2
+      allow_any_instance_of(described_class).to receive(:checkpoint_store_for)
+        .and_raise(described_class::CheckpointTableMissing, "no table")
+
+      described_class.perform_now(crew)
+      expect(enqueued_jobs).to be_empty
+    end
+
+    context "with checkpointing on" do
+      let(:crew) { RcrewAI::Rails::Crew.create!(name: "C", process_type: "sequential", checkpoint_enabled: true) }
+
+      # Counts how often its tool really ran.
+      let(:tool_class) do
+        stub_const("RetrySpecTool", Class.new(RCrewAI::Tools::Base) do
+          tool_name "retry_spy"
+          description "d"
+          cattr_accessor :runs, default: 0
+          def execute(**)
+            self.class.runs += 1
+            "ran"
+          end
+        end)
+      end
+
+      it "resumes on retry, so tools in finished tasks do not run again" do
+        config.allowed_tool_classes = [tool_class]
+        config.crew_job_attempts = 2
+        crew.agents.first.tools.create!(name: "spy", tool_class: "RetrySpecTool")
+
+        replies = [{ content: "USE_TOOL[retry_spy]()\nFINAL_ANSWER[done]", finish_reason: :stop, usage: {} }]
+        fake_llm = double("LLMClient", supports_native_tools?: false)
+        allow(fake_llm).to receive(:chat) { replies.shift || { content: "FINAL_ANSWER[done]", finish_reason: :stop, usage: {} } }
+        allow(RCrewAI::LLMClient).to receive(:for_provider).and_return(fake_llm)
+
+        # The run finishes its work, then the process dies before the job ends.
+        crashed = false
+        allow_any_instance_of(RcrewAI::Rails::Execution).to receive(:complete!).and_wrap_original do |original, *args|
+          unless crashed
+            crashed = true
+            raise "lost connection"
+          end
+          original.call(*args)
+        end
+
+        described_class.perform_now(crew)
+        expect(tool_class.runs).to eq(1)
+        expect(enqueued_jobs.size).to eq(1)
+
+        perform_enqueued_jobs
+
+        expect(tool_class.runs).to eq(1)
+        first, second = crew.executions.order(:id).to_a
+        expect(first.status).to eq("failed")
+        expect(second.status).to eq("completed")
+        expect(second.parent_run_id).to eq(first.run_id)
+      ensure
+        config.allowed_tool_classes = []
+      end
+    end
+  end
 end

@@ -3,7 +3,7 @@
   <div class="actions">
     <%= link_to "Edit", edit_crew_path(@crew), class: "btn" %>
     <%= button_to "Execute", execute_crew_path(@crew), method: :post, class: "btn btn-success" %>
-    <%= button_to "Delete", @crew, method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-danger" %>
+    <%= button_to "Delete", @crew, method: :delete, form: { data: { turbo_confirm: "Are you sure?" } }, class: "btn btn-danger" %>
   </div>
 </div>
 
