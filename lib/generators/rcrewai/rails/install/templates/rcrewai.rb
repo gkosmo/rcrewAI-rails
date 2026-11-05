@@ -76,8 +76,7 @@ RCrewAI.configure(validate: false) do |config|
   # config.openai_model = "gpt-4o"
   # config.anthropic_model = "claude-opus-5-5"
 
-  # Current Claude models reject temperature, so leave it unset to use them.
-  # config.temperature = nil
+  # Current Claude models reject temperature, so don't set it if you use them.
 end
 
 # More engine settings. RcrewAI.configure is the same as RcrewAI::Rails.configure.
