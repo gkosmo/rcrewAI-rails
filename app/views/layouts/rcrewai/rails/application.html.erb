@@ -6,8 +6,10 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
+    <%= rcrewai_cable_meta_tag %>
+
+    <%= tag.link rel: "stylesheet", href: asset_stylesheet_path(v: RcrewAI::Rails::VERSION), nonce: content_security_policy_nonce %>
+    <%= tag.script src: asset_turbo_path(v: RcrewAI::Rails::VERSION), type: "module", nonce: content_security_policy_nonce %>
   </head>
 
   <body>

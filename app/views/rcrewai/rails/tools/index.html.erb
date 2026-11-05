@@ -33,8 +33,7 @@
         <div class="tool-actions">
           <%= link_to "View", [@agent, tool], class: "btn btn-sm" %>
           <%= link_to "Edit", edit_agent_tool_path(@agent, tool), class: "btn btn-sm" %>
-          <%= link_to "Delete", [@agent, tool], method: :delete, 
-              confirm: "Are you sure?", class: "btn btn-sm btn-danger" %>
+          <%= link_to "Delete", [@agent, tool], data: { turbo_method: :delete, turbo_confirm: "Are you sure?" }, class: "btn btn-sm btn-danger" %>
         </div>
       </div>
     <% end %>

@@ -67,27 +67,15 @@
     </div>
 
     <div class="form-group">
-      <%= form.label :max_iter, "Max Iterations", class: "form-label" %>
-      <%= form.number_field :max_iter, class: "form-input", min: 1 %>
+      <%= form.label :max_iterations, "Max Iterations", class: "form-label" %>
+      <%= form.number_field :max_iterations, class: "form-input", min: 1 %>
       <span class="form-help">Maximum number of iterations (optional)</span>
-    </div>
-
-    <div class="form-group">
-      <%= form.label :max_execution_time, "Max Execution Time (seconds)", class: "form-label" %>
-      <%= form.number_field :max_execution_time, class: "form-input", min: 1 %>
-      <span class="form-help">Maximum execution time in seconds (optional)</span>
     </div>
 
     <div class="form-group">
       <%= form.label :llm_config, "LLM Configuration (JSON)", class: "form-label" %>
       <%= form.text_area :llm_config, class: "form-input", rows: 3 %>
       <span class="form-help">LLM configuration in JSON format (optional)</span>
-    </div>
-
-    <div class="form-group">
-      <%= form.label :tools_config, "Tools Configuration (JSON)", class: "form-label" %>
-      <%= form.text_area :tools_config, class: "form-input", rows: 3 %>
-      <span class="form-help">Tools configuration in JSON format (optional)</span>
     </div>
 
     <div class="form-group">
@@ -99,8 +87,7 @@
     <div class="form-actions">
       <%= form.submit "Update Agent", class: "btn btn-primary" %>
       <%= link_to "Cancel", @agent, class: "btn btn-secondary" %>
-      <%= link_to "Delete Agent", @agent, method: :delete, 
-          confirm: "Are you sure you want to delete this agent?", 
+      <%= link_to "Delete Agent", @agent, data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete this agent?" }, 
           class: "btn btn-danger" %>
     </div>
   <% end %>
