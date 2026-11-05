@@ -156,7 +156,7 @@
 <section class="page-hero">
   <div class="wrap">
     <h1>Capabilities</h1>
-    <p>The engine requires rcrewai ~> 0.10.0. Every capability is configured through columns on the persisted models and forwarded to the core objects at build time — all off/absent by default.</p>
+    <p>The engine requires rcrewai ~> 0.11.0. Every capability is configured through columns on the persisted models and forwarded to the core objects at build time — all off/absent by default.</p>
   </div>
 </section>
 
@@ -179,7 +179,6 @@
   name: "researcher", role: "Researcher", goal: "Find facts",
   reasoning: true,
   max_rpm: 30,
-  # Current Claude models also need RCrewAI's temperature set to nil.
   llm_config: { provider: "anthropic", model: "claude-opus-5-5" },
   memory_enabled: true, memory_scope: "research", memory_short_term_limit: 20
 )</pre>
@@ -311,12 +310,13 @@ end</pre>
         <tr><td><code>openai_responses</code></td><td>OpenAI's Responses API. Non-streaming only.</td></tr>
       </tbody>
     </table>
-    <p class="caption">Current Claude models reject the temperature rcrewai sends by default, so set RCrewAI's temperature to nil to use them.</p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
+    <h2>rcrewai 0.11</h2>
+    <p>Agents with tools now send each provider's real request format after a tool call, tested against stubbed HTTP. rcrewai no longer sends its default temperature to Anthropic, and Anthropic and Google have new default models.</p>
     <h2>rcrewai 0.10</h2>
     <p>Keep-alive streaming connections apply automatically to Anthropic agents that stream. <code>CancelToken</code>, per-call <code>chat(model:)</code>, and <code>cached_tokens</code> are not exposed by the engine: <code>Execution#cancel!</code> only updates the record's status and does not stop a running stream. Call an rcrewai client directly from your own code to use them.</p>
   </div>

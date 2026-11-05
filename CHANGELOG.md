@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-05
+
+Tracks **rcrewai 0.11.0**, skipping 0.10. Agents with tools should now work on real providers, and current Claude models are usable. No migration is needed.
+
 ### Changed
-- Requires `rcrewai ~> 0.10.0`. No migration is needed, and the suite passed against it unchanged. The engine does not expose 0.10's `CancelToken`, per-call `chat(model:)` or `cached_tokens`; see the README.
+- Requires `rcrewai ~> 0.11.0`. The engine does not expose rcrewai 0.10's `CancelToken`, per-call `chat(model:)` or `cached_tokens`; see the README.
+- **Behavior changes from rcrewai 0.11:** Anthropic and Google have new default models, `config.model` now takes effect, and an explicit `config.temperature` is rejected by current Claude models. See the README.
 
 ### Fixed
 - **Docs and install template:** the README and docs site set `config.openai_api_key` inside `RcrewAI.configure`, which is the engine's configuration, so the example raised `NoMethodError`. They now use `RCrewAI.configure(validate: false)`. The generated initializer's commented example also named settings that don't exist (`groq_api_key`, `default_model`).

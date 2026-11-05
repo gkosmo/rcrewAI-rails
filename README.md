@@ -10,7 +10,7 @@ Rails engine for integrating [rcrewai](https://github.com/gkosmo/rcrewAI) into y
 - **Web UI**: Monitor and manage crews through a built-in interface
 - **Rails-Specific Tools**: Pre-built tools for ActiveRecord, ActionMailer, Rails cache, and more
 - **Configuration**: Flexible configuration through Rails initializers
-- **Runs on rcrewai 0.10, with features through 0.9 exposed on the models** (see [rcrewai 0.10](#rcrewai-010), [0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities)):
+- **Runs on rcrewai 0.11, with features through 0.9 exposed on the models** (see [rcrewai 0.11](#rcrewai-011), [0.10](#rcrewai-010), [0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities)):
   - Agent config: reasoning, per-agent LLM, rate limiting, context-window trimming, cognitive memory
   - Task output: structured output schemas, guardrails, file output, multimodal attachments
   - Crew: `before_kickoff`/`after_kickoff` hooks, planning, the `consensual` process, batch execution
@@ -296,10 +296,25 @@ crew.execute_sync(inputs)
 RcrewAI::Rails::CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
 ```
 
+## rcrewai 0.11
+
+This engine requires [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.11.0`. The
+upgrade needs no migration.
+
+- **Agents with tools:** requests after a tool call were malformed on every provider
+  in earlier rcrewai versions. rcrewai 0.11 sends each provider's real format. It's
+  tested against stubbed HTTP, not yet against live APIs.
+- **Current Claude models:** rcrewai no longer sends its default `temperature` to
+  Anthropic. If you set `config.temperature`, current Claude models reject it, so remove
+  it or clear it on one agent with `llm_config: { provider: "anthropic", temperature: nil }`.
+- **Defaults changed:** Anthropic now defaults to `claude-opus-5-5` and Google to
+  `gemini-3.8-flash`, and `config.model` in `RCrewAI.configure` now takes effect. Check
+  any agent relying on a default. See rcrewai's
+  [upgrade guide](https://github.com/gkosmo/rcrewAI/blob/main/docs/upgrading-to-0.11.md).
+
 ## rcrewai 0.10
 
-This engine requires [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.10.0`. The
-upgrade needs no migration. rcrewai 0.10 adds live streaming features to its
+rcrewai 0.10 adds live streaming features to its
 Anthropic client, and most of them work at the client level, so the engine has no
 settings for them:
 
@@ -313,13 +328,6 @@ settings for them:
 
 To use cancellation or per-call models, call an rcrewai client directly from your
 own code.
-
-**Current Claude models:** these reject the `temperature` that rcrewai sends by
-default, so turn it off globally. A per-agent `llm_config` can't remove it.
-
-```ruby
-RCrewAI.configure(validate: false) { |config| config.temperature = nil }
-```
 
 ## rcrewai 0.9 capabilities
 
@@ -433,7 +441,7 @@ existing records are unaffected — set only what you need.
 | `reasoning` / `max_reasoning_attempts` | Run a planning/reasoning pass before answering |
 | `respect_context_window` | Trim history to fit the model's context window |
 | `parallel_tools` | Run a turn's tool calls concurrently (rcrewai 0.9; `nil` uses the gem default of on) |
-| `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-opus-5-5" }` (see the [`temperature` note](#rcrewai-010)) |
+| `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-opus-5-5" }` |
 | `memory_enabled` + `memory_scope` + `memory_short_term_limit` | Enable cognitive memory (see below) |
 
 ```ruby
@@ -441,7 +449,6 @@ agent = crew.agents.create!(
   name: "researcher", role: "Researcher", goal: "Find facts",
   reasoning: true,
   max_rpm: 30,
-  # Current Claude models also need RCrewAI's temperature set to nil; see "rcrewai 0.10".
   llm_config: { provider: "anthropic", model: "claude-opus-5-5" },
   memory_enabled: true, memory_scope: "research", memory_short_term_limit: 20
 )
