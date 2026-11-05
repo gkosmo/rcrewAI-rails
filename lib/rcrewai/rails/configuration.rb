@@ -10,15 +10,16 @@ module RcrewAI
                     :observation_flush_every, :observation_retention_days,
                     :checkpoint_enabled, :checkpoint_store,
                     :llm_before_request, :llm_after_response,
-                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools, :crew_job_attempts, :crew_job_retry_wait, :task_max_retries
+                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools,
+                    :crew_job_attempts, :crew_job_retry_wait, :task_max_retries
 
       def initialize
         @job_queue_name = "default"
         @enable_web_ui = true
         @persistence_backend = :active_record
         @default_llm_provider = "openai"
-        @default_llm_model = "gpt-4"
-        @max_retries = 3
+        @default_llm_model = "gpt-4o"
+        @max_retries = 3 # unused; see task_max_retries and crew_job_attempts
         @timeout = 300 # 5 minutes
         @enable_logging = true
         @log_level = :info
