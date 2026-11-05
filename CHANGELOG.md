@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-05
+
+Skips 0.10 and 0.11 to track rcrewai's version.
+
 **Breaking.** After upgrading, the dashboard and API answer 403 outside development until you set `config.authenticate_with`, and tools stop loading until you list them in `config.allowed_tool_classes`. Failed runs no longer retry unless you opt in. See the README's Security section.
 
 ### Security
