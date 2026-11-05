@@ -51,6 +51,27 @@ RSpec.describe RcrewAI::Rails::Generators::InstallGenerator do
       content = File.read(File.join(destination, "config/initializers/rcrewai.rb"))
       expect(content).to include("RcrewAI::Rails.configure")
     end
+
+    it "shows provider settings on the base gem, not the engine's config" do
+      run_generator
+      content = File.read(File.join(destination, "config/initializers/rcrewai.rb"))
+      expect(content).to include("RCrewAI.configure(validate: false)")
+      expect(content).not_to match(/groq_api_key|default_model\b/)
+
+      base_block = content[/^RCrewAI\.configure.*?^end$/m]
+      expect(base_block).to include("config.openai_api_key")
+      expect(content.sub(base_block, "")).not_to include("config.openai_api_key")
+    end
+
+    it "generates an initializer that loads" do
+      run_generator
+      path = File.join(destination, "config/initializers/rcrewai.rb")
+      engine_config = RcrewAI::Rails.configuration
+
+      expect { load path }.not_to raise_error
+    ensure
+      RcrewAI::Rails.configuration = engine_config
+    end
   end
 
   describe "the migration" do

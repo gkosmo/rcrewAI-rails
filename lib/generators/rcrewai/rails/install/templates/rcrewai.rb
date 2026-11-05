@@ -63,17 +63,25 @@ RcrewAI::Rails.configure do |config|
   # config.observation_retention_days = 30
 end
 
-# Configure RcrewAI base gem if needed
-RcrewAI.configure do |config|
-  # Set your API keys here or in environment variables
-  # config.openai_api_key = ENV["OPENAI_API_KEY"]
-  # config.anthropic_api_key = ENV["ANTHROPIC_API_KEY"]
-  # config.groq_api_key = ENV["GROQ_API_KEY"]
-  
-  # Configure other RcrewAI settings
-  # config.default_model = "gpt-4"
-  # config.temperature = 0.7
+# Configure the base rcrewai gem if needed. Note the capital C: RCrewAI holds
+# provider settings, while RcrewAI.configure below is this engine's configuration.
+# validate: false stops a missing key from failing boot in places that don't call
+# an LLM, such as assets:precompile.
+RCrewAI.configure(validate: false) do |config|
+  # Keys are read from the environment (OPENAI_API_KEY, ANTHROPIC_API_KEY, ...)
+  # automatically, so set them here only if they come from somewhere else.
+  # config.openai_api_key = Rails.application.credentials.openai_api_key
+  # config.anthropic_api_key = Rails.application.credentials.anthropic_api_key
 
+  # config.openai_model = "gpt-4o"
+  # config.anthropic_model = "claude-opus-5-5"
+
+  # Current Claude models reject temperature, so leave it unset to use them.
+  # config.temperature = nil
+end
+
+# More engine settings. RcrewAI.configure is the same as RcrewAI::Rails.configure.
+RcrewAI.configure do |config|
   # --- Checkpointing (rcrewai 0.8+) -----------------------------------------
   # Records durable per-task state during a crew run so an interrupted run can
   # be resumed instead of re-executing (and re-paying for) completed tasks.

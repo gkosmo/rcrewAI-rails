@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Requires `rcrewai ~> 0.10.0`. No migration is needed, and the suite passed against it unchanged. The engine does not expose 0.10's `CancelToken`, per-call `chat(model:)` or `cached_tokens`; see the README.
+
+### Fixed
+- **Docs and install template:** the README and docs site set `config.openai_api_key` inside `RcrewAI.configure`, which is the engine's configuration, so the example raised `NoMethodError`. They now use `RCrewAI.configure(validate: false)`. The generated initializer's commented example also named settings that don't exist (`groq_api_key`, `default_model`).
+- **Docs:** the README's `tools [ ... ]` example nested the array and broke the agent, and it didn't say that tools must be required explicitly.
+- **Docs:** corrected the `CrewExecutionJob` namespace, the rcrewai repo link and the gem's documentation URL, listed `POST /crews`, and brought the docs site up from rcrewai 0.7.
+
 ## [0.9.0] - 2026-09-10
 
 Tracks **rcrewai 0.9.0**, whose theme is concurrency: a turn's tool calls,

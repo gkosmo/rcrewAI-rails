@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/master/CHANGELOG.md"
-  spec.metadata["documentation_uri"] = "https://gkosmo.github.io/rcrewai-rails/"
+  spec.metadata["documentation_uri"] = "https://gkosmo.github.io/rcrewAI-rails/"
   spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
   spec.metadata["wiki_uri"] = "#{spec.homepage}/wiki"
   spec.metadata["rubygems_mfa_required"] = "true"
@@ -45,7 +45,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Core dependency
-  spec.add_dependency "rcrewai", "~> 0.9.0"
+  spec.add_dependency "rcrewai", "~> 0.10.0"
   
   # Rails dependencies
   spec.add_dependency "rails", ">= 7.0.0"
