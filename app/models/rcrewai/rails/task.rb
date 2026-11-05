@@ -30,6 +30,7 @@ module RcrewAI
           async: async_execution,
           tools: instantiated_tools,
           callback: callback_method,
+          max_retries: RcrewAI::Rails.config.task_max_retries,
           **task_output_options
         )
       end

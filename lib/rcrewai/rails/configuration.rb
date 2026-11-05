@@ -10,7 +10,7 @@ module RcrewAI
                     :observation_flush_every, :observation_retention_days,
                     :checkpoint_enabled, :checkpoint_store,
                     :llm_before_request, :llm_after_response,
-                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools
+                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools, :crew_job_attempts, :crew_job_retry_wait, :task_max_retries
 
       def initialize
         @job_queue_name = "default"
@@ -50,6 +50,12 @@ module RcrewAI
         # ->(agent) { [tools or connected MCP clients] }. The host owns the
         # connections, so nothing a form submits can start a process.
         @agent_mcp_tools = nil
+        # Runs can have side effects, so a failed run isn't repeated unless the
+        # host opts in. 1 means no retry.
+        @crew_job_attempts = 1
+        @crew_job_retry_wait = 30 # seconds, doubling per attempt
+        # What the core gem's Task re-runs on failure, tools included.
+        @task_max_retries = 0
       end
     end
   end
