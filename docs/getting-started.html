@@ -198,8 +198,9 @@ end</pre>
   config.default_memory_store = RCrewAI::Memory::SqliteStore.new(path: "db/rcrewai_memory.sqlite3")
 end
 
-# Configure the base RcrewAI gem
-RcrewAI.configure do |config|
+# Configure the base rcrewai gem (note the capital C).
+# Keys in the environment are read automatically.
+RCrewAI.configure(validate: false) do |config|
   config.openai_api_key = ENV["OPENAI_API_KEY"]
 end</pre>
   </div>

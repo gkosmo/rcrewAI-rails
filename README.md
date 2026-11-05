@@ -1,6 +1,6 @@
 # RcrewAI Rails
 
-Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewai-rails) into your Rails applications. Provides ActiveRecord persistence, background job integration, generators, and a web UI for managing AI crews and agents.
+Rails engine for integrating [rcrewai](https://github.com/gkosmo/rcrewAI) into your Rails applications. Provides ActiveRecord persistence, background job integration, generators, and a web UI for managing AI crews and agents.
 
 ## Features
 
@@ -10,7 +10,7 @@ Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewai-rails) 
 - **Web UI**: Monitor and manage crews through a built-in interface
 - **Rails-Specific Tools**: Pre-built tools for ActiveRecord, ActionMailer, Rails cache, and more
 - **Configuration**: Flexible configuration through Rails initializers
-- **Full rcrewai 0.9 feature coverage** (see [rcrewai 0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities) capabilities):
+- **Runs on rcrewai 0.10, with features through 0.9 exposed on the models** (see [rcrewai 0.10](#rcrewai-010), [0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities)):
   - Agent config: reasoning, per-agent LLM, rate limiting, context-window trimming, cognitive memory
   - Task output: structured output schemas, guardrails, file output, multimodal attachments
   - Crew: `before_kickoff`/`after_kickoff` hooks, planning, the `consensual` process, batch execution
@@ -171,8 +171,12 @@ RcrewAI::Rails.configure do |config|
   config.log_level = :info
 end
 
-# Configure the base RcrewAI gem
-RcrewAI.configure do |config|
+# Configure the base rcrewai gem. It reads provider keys such as OPENAI_API_KEY
+# and ANTHROPIC_API_KEY from the environment on its own, so this is only needed
+# for values set in code. Note the capital C: `RcrewAI.configure` is the engine's
+# configuration, which has no provider settings. `validate: false` stops a missing
+# key from failing boot in places that don't call an LLM, such as assets:precompile.
+RCrewAI.configure(validate: false) do |config|
   config.openai_api_key = ENV["OPENAI_API_KEY"]
   # Add other LLM provider keys as needed
 end
@@ -239,14 +243,20 @@ execution = crew.execute(topic: "AI in Healthcare")
 
 ### Using Rails-Specific Tools
 
+The tools are not loaded with the engine, so require the ones you use:
+
 ```ruby
+require "rcrewai/rails/tools/active_record_tool"
+require "rcrewai/rails/tools/rails_cache_tool"
+require "rcrewai/rails/tools/action_mailer_tool"
+
 class DataAnalystAgent
   include RcrewAI::Rails::AgentBuilder
   
   agent_role "Data Analyst"
   agent_goal "Analyze application data"
   
-  tools [
+  tools(
     RcrewAI::Rails::Tools::ActiveRecordTool.new(
       model_class: User,
       allowed_methods: [:count, :where, :pluck]
@@ -256,9 +266,12 @@ class DataAnalystAgent
       mailer_class: ReportMailer,
       allowed_methods: [:send_report]
     )
-  ]
+  )
 end
 ```
+
+Pass the tools as separate arguments, not as one array: `tools [a, b]` nests the
+array and the agent fails when it lists its tools.
 
 ### Monitoring Executions
 
@@ -280,12 +293,35 @@ crew.execute_async(inputs)
 crew.execute_sync(inputs)
 
 # Custom job options
-CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
+RcrewAI::Rails::CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
+```
+
+## rcrewai 0.10
+
+This engine requires [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.10.0`. The
+upgrade needs no migration. rcrewai 0.10 adds live streaming features to its
+Anthropic client, and most of them work at the client level, so the engine has no
+settings for them:
+
+| rcrewai 0.10 feature | In this engine |
+|---|---|
+| Keep-alive connection for streaming requests | Applies automatically to Anthropic agents that stream |
+| `config.base_url` for Anthropic | Set it in `RCrewAI.configure` |
+| `RCrewAI::CancelToken` / `chat(cancel:)` | Not exposed. `Execution#cancel!` only updates the record's status and does not stop a running stream |
+| `chat(model:)` per-call override | Not exposed. Use an agent's `llm_config` to choose its model |
+| `cached_tokens` on usage | Not recorded. The observation engine does not store it on spans or rollups |
+
+To use cancellation or per-call models, call an rcrewai client directly from your
+own code.
+
+**Current Claude models:** these reject the `temperature` that rcrewai sends by
+default, so turn it off globally. A per-agent `llm_config` can't remove it.
+
+```ruby
+RCrewAI.configure(validate: false) { |config| config.temperature = nil }
 ```
 
 ## rcrewai 0.9 capabilities
-
-This engine tracks [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.9`.
 
 ### Concurrency
 
@@ -397,7 +433,7 @@ existing records are unaffected — set only what you need.
 | `reasoning` / `max_reasoning_attempts` | Run a planning/reasoning pass before answering |
 | `respect_context_window` | Trim history to fit the model's context window |
 | `parallel_tools` | Run a turn's tool calls concurrently (rcrewai 0.9; `nil` uses the gem default of on) |
-| `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-sonnet-5" }` |
+| `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-opus-5-5" }` (see the [`temperature` note](#rcrewai-010)) |
 | `memory_enabled` + `memory_scope` + `memory_short_term_limit` | Enable cognitive memory (see below) |
 
 ```ruby
@@ -405,7 +441,8 @@ agent = crew.agents.create!(
   name: "researcher", role: "Researcher", goal: "Find facts",
   reasoning: true,
   max_rpm: 30,
-  llm_config: { provider: "anthropic", model: "claude-sonnet-5" },
+  # Current Claude models also need RCrewAI's temperature set to nil; see "rcrewai 0.10".
+  llm_config: { provider: "anthropic", model: "claude-opus-5-5" },
   memory_enabled: true, memory_scope: "research", memory_short_term_limit: 20
 )
 ```
@@ -500,6 +537,7 @@ The engine provides JSON API endpoints:
 ```
 GET    /rcrewai/api/v1/crews
 GET    /rcrewai/api/v1/crews/:id
+POST   /rcrewai/api/v1/crews
 POST   /rcrewai/api/v1/crews/:id/execute
 GET    /rcrewai/api/v1/executions
 GET    /rcrewai/api/v1/executions/:id
