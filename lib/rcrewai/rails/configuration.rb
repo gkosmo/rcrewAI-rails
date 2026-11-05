@@ -9,7 +9,8 @@ module RcrewAI
                     :observation_prompt_max_bytes, :observation_flush_mode,
                     :observation_flush_every, :observation_retention_days,
                     :checkpoint_enabled, :checkpoint_store,
-                    :llm_before_request, :llm_after_response
+                    :llm_before_request, :llm_after_response,
+                    :authenticate_with
 
       def initialize
         @job_queue_name = "default"
@@ -40,6 +41,10 @@ module RcrewAI
         # array of callables, applied to every client the engine builds.
         @llm_before_request = nil
         @llm_after_response = nil
+        # Runs before every engine controller, with the controller. Truthy lets
+        # the request through; anything else is a 403, unless it already
+        # responded. With nil, only development is allowed.
+        @authenticate_with = nil
       end
     end
   end
