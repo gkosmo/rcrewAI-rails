@@ -46,7 +46,7 @@ RSpec.describe "installing into a real host app", :host_app do
       gem "rcrewai-rails", path: "#{ENGINE_ROOT}"
       #{extra_gems}
     GEMFILE
-    sh!("bundle", "install", "--prefer-local", "--quiet", dir: dir)
+    sh!("bundle", "install", dir: dir)
   end
 
   def install_and_probe(dir)
