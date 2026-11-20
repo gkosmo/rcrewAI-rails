@@ -42,6 +42,6 @@
   </div>
 </div>
 
-<% if defined?(turbo_stream_from) && @execution.running? %>
-  <%= turbo_stream_from "rcrewai_execution_#{@execution.id}" %>
+<% if @execution.running? %>
+  <%= rcrewai_stream_from "rcrewai_execution_#{@execution.id}" %>
 <% end %>

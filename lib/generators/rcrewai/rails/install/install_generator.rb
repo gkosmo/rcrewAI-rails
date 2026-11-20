@@ -8,6 +8,10 @@ module RcrewAI
       class InstallGenerator < ::Rails::Generators::Base
         include ::Rails::Generators::Migration
 
+        # The class name inflects to rcrew_a_i, which doesn't match where this
+        # file lives, so neither name would find it.
+        namespace "rcrewai:rails:install"
+
         source_root File.expand_path("templates", __dir__)
 
         MOUNT_PATH = "/rcrewai".freeze
@@ -37,8 +41,10 @@ module RcrewAI
           say "  1. Run `rails db:migrate` to create the RcrewAI tables"
           say "  2. Configure your settings in config/initializers/rcrewai.rb"
           say "  3. Set your LLM API keys in environment variables"
-          say "  4. Visit #{MOUNT_PATH} to monitor your crews"
-          say "  5. Start building AI crews with RcrewAI!"
+          say "  4. Set config.authenticate_with in config/initializers/rcrewai.rb."
+          say "     Until you do, #{MOUNT_PATH} answers 403 everywhere except development."
+          say "  5. Visit #{MOUNT_PATH} to monitor your crews"
+          say "  6. Start building AI crews with RcrewAI!"
           say "\n"
         end
       end

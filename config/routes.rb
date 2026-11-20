@@ -1,6 +1,10 @@
 RcrewAI::Rails::Engine.routes.draw do
   root to: "crews#index"
 
+  # The dashboard's own CSS and JavaScript. See AssetsController.
+  get "assets/dashboard.css", to: "assets#stylesheet", as: :asset_stylesheet
+  get "assets/turbo.js", to: "assets#turbo", as: :asset_turbo
+
   resources :crews do
     member do
       post :execute
@@ -50,7 +54,4 @@ RcrewAI::Rails::Engine.routes.draw do
       end
     end
   end
-
-  # Mount Turbo Streams for real-time updates
-  mount ActionCable.server => '/cable' if defined?(ActionCable)
 end

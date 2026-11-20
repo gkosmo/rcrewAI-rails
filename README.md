@@ -147,6 +147,52 @@ end
 
 This makes the web UI available at `/rcrewai` and API endpoints at `/rcrewai/api/v1/`.
 
+## Security
+
+### Who can reach the dashboard and API
+
+Set `config.authenticate_with`. Until you do, every engine route, the JSON API included, answers 403 outside development.
+
+```ruby
+# config/initializers/rcrewai.rb
+RcrewAI::Rails.configure do |config|
+  config.authenticate_with = ->(controller) { controller.authenticate_user! } # Devise
+end
+```
+
+The callable runs before every engine controller and receives the controller. A truthy result lets the request through. Anything else is a 403, unless the callable already responded, as `authenticate_user!` or `redirect_to` do. To open the dashboard on purpose, use `->(_) { true }`.
+
+The API runs the same callable. It also keeps Rails' CSRF protection, so where forgery protection is on, a POST needs a CSRF token even from a client that passes the callable.
+
+### Which tool classes can be loaded
+
+Tool class names come from forms and database rows, so they're checked against `config.allowed_tool_classes` before anything is loaded. The list is empty by default, so existing tools must be added to it. Running an agent with a tool that isn't listed raises `RcrewAI::Rails::ToolAllowlist::NotAllowed`.
+
+```ruby
+config.allowed_tool_classes = ["RCrewAI::Tools::WebSearch", MyApp::SearchTool]
+```
+
+### Action Cable
+
+The engine no longer mounts Action Cable, so it adds no WebSocket endpoint. Live updates use your app's Action Cable, at whatever path it's configured, normally `/cable`. Your app needs Action Cable loaded and a working adapter in `config/cable.yml`. Without Action Cable the dashboard still renders but doesn't update by itself.
+
+Requests to your Action Cable endpoint don't pass through `authenticate_with`. What protects the dashboard's streams:
+
+- **Stream names are signed.** A browser can only subscribe to a stream whose signed name it got from a dashboard page, and those pages are behind `authenticate_with`.
+- **The signatures don't expire.** Someone who loaded a page keeps a working name for that stream after losing access. Authenticate connections in your `ApplicationCable::Connection` if that matters to you.
+
+Streams carry execution logs and traces, which can include prompts and tool results.
+
+## Running crews
+
+- **Retries:** a failed run isn't repeated by default, because it may have sent emails or spent money. Set `config.crew_job_attempts` above 1 to opt in. With checkpointing on, a retry resumes the run and skips finished tasks. Tools in the task that failed run again, and without checkpointing the whole run repeats.
+- **Task retries:** the engine sets the core gem's task retries to `config.task_max_retries`, default 0.
+- **MCP servers:** connect them in your app and return them per agent from `config.agent_mcp_tools`. They can't be configured from the dashboard, since a stdio server starts a process.
+
+## Assets
+
+The dashboard serves its own CSS and Turbo from the engine, under `<mount path>/assets/`, so it doesn't need Sprockets, Propshaft, Webpacker or your `application` assets. If your app sets a Content Security Policy, these count as same-origin and use its nonce.
+
 ## Configuration
 
 Configure RcrewAI Rails in `config/initializers/rcrewai.rb`:
@@ -164,7 +210,7 @@ RcrewAI::Rails.configure do |config|
   
   # Default LLM settings
   config.default_llm_provider = "openai"
-  config.default_llm_model = "gpt-4"
+  config.default_llm_model = "gpt-4o"
   
   # Logging
   config.enable_logging = true
