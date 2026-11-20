@@ -68,7 +68,7 @@ module RcrewAI
       def task_params
         params.require(:task).permit(
           :description, :expected_output, :agent_id, :async_execution, 
-          :context, :config, :tools_config, :output_file, :active, :order_index
+          :context, :output_file, :active, :order_index
         )
       end
     end

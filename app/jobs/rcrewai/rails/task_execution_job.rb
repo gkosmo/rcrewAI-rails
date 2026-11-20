@@ -3,7 +3,13 @@ module RcrewAI
     class TaskExecutionJob < ActiveJob::Base
       queue_as { RcrewAI::Rails.config.job_queue_name }
 
-      retry_on StandardError, wait: 5.seconds, attempts: 3
+      # Same setting as CrewExecutionJob, for the same reason: a task can have
+      # side effects, so it isn't repeated unless the host opts in.
+      rescue_from(StandardError) do |error|
+        raise error if executions >= RcrewAI::Rails.config.crew_job_attempts
+
+        retry_job(wait: RcrewAI::Rails.config.crew_job_retry_wait, error: error)
+      end
 
       def perform(task, agent, inputs = {})
         execution_log = {

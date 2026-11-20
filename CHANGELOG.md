@@ -7,10 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-05
+
+Skips 0.10 and 0.11 to track rcrewai's version.
+
+**Breaking.** After upgrading, the dashboard and API answer 403 outside development until you set `config.authenticate_with`, and tools stop loading until you list them in `config.allowed_tool_classes`. Failed runs no longer retry unless you opt in. See the README's Security section.
+
+### Security
+- **The dashboard and JSON API had no access control,** so anyone who could reach the mount could read, create and run crews. Every engine controller now runs `config.authenticate_with`, which denies by default outside development.
+- **Tool class names were passed to `constantize`** from form fields and stored rows. They're now checked against `config.allowed_tool_classes` first, and the list is empty by default.
+- **The engine mounted Action Cable at `<mount>/cable`,** a second endpoint outside `authenticate_with` that nothing used. It's gone. See the README for what your app's endpoint exposes.
+
+### Added
+- `config.agent_mcp_tools`, for giving an engine agent tools from MCP servers your app connects to.
+- `config.crew_job_attempts`, `config.crew_job_retry_wait` and `config.task_max_retries`.
+
 ### Changed
-- Requires `rcrewai ~> 0.10.0`. No migration is needed, and the suite passed against it unchanged. The engine does not expose 0.10's `CancelToken`, per-call `chat(model:)` or `cached_tokens`; see the README.
+- Allows `rcrewai >= 0.11.0, < 0.13`. rcrewai's next release requires an `approval_handler` for unattended runs of agents with `require_approval_for_tools`. Engine agents don't set that option. The engine does not expose 0.10's `CancelToken`, per-call `chat(model:)` or `cached_tokens`; see the README.
+- **Behavior change:** `CrewExecutionJob` and `TaskExecutionJob` no longer retry on any error, three times. The core gem's task retries now default to 0 too. A transient error now fails the run unless you opt in.
+- **Behavior change:** `default_llm_model` and the generated initializer now use `gpt-4o`, because OpenAI shut `gpt-4` down on 2026-10-23.
+- The dashboard serves its own CSS and Turbo instead of the host's `application` assets.
 
 ### Fixed
+- **`rails generate rcrewai:rails:install` and `rcrewai:rails:crew` found no generator,** while exiting 0. Both now work as documented.
+- **The dashboard crashed on Webpacker and other hosts without a Sprockets `application.js`,** because the layout linked the host's assets. It also has styles for the first time.
+- **Dashboard pages that always crashed now render:** execution, agent and task pages named columns and a route that don't exist. Agent and task forms no longer offer or accept those columns.
+- **Agents with dashboard-configured tools crashed when they ran,** because `Agent#instantiated_tools` treated tool records as JSON. They now get their active tools.
+- Delete links relied on rails-ujs and did nothing without it. They now use Turbo.
 - **Docs and install template:** the README and docs site set `config.openai_api_key` inside `RcrewAI.configure`, which is the engine's configuration, so the example raised `NoMethodError`. They now use `RCrewAI.configure(validate: false)`. The generated initializer's commented example also named settings that don't exist (`groq_api_key`, `default_model`).
 - **Docs:** the README's `tools [ ... ]` example nested the array and broke the agent, and it didn't say that tools must be required explicitly.
 - **Docs:** corrected the `CrewExecutionJob` namespace, the rcrewai repo link and the gem's documentation URL, listed `POST /crews`, and brought the docs site up from rcrewai 0.7.
