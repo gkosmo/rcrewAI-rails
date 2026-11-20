@@ -39,15 +39,6 @@ module RcrewAI
         g.factory_bot dir: 'spec/factories'
       end
 
-      initializer "rcrewai_rails.assets" do |app|
-        if app.config.respond_to?(:assets)
-          app.config.assets.paths << root.join("app/assets/stylesheets")
-          app.config.assets.paths << root.join("app/assets/javascripts")
-        end
-      end
-
-
-
       initializer "rcrewai_rails.configure" do |app|
         RcrewAI::Rails.configure do |config|
           config.job_queue_name = ENV.fetch("RCREWAI_QUEUE", "default")

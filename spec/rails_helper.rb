@@ -29,6 +29,11 @@ RSpec.configure do |config|
   # Every RCrewAI::Agent.new builds an LLM client via LLMClient.for_provider,
   # which validates provider credentials. Replace it with a tiny double for
   # all model/job specs so they don't need real API keys.
+  # Specs that aren't about access control act as a signed-in host would.
+  config.before(:each) do
+    RcrewAI::Rails.config.authenticate_with = ->(_controller) { true }
+  end
+
   config.before(:each) do
     fake_llm = double("LLMClient")
     allow(fake_llm).to receive(:chat).and_return(

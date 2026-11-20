@@ -156,7 +156,7 @@
 <section class="page-hero">
   <div class="wrap">
     <h1>Capabilities</h1>
-    <p>The engine tracks rcrewai ~> 0.7. Every capability is configured through columns on the persisted models and forwarded to the core objects at build time — all off/absent by default.</p>
+    <p>The engine requires rcrewai ~> 0.10.0. Every capability is configured through columns on the persisted models and forwarded to the core objects at build time — all off/absent by default.</p>
   </div>
 </section>
 
@@ -170,6 +170,7 @@
         <tr><td><code>max_rpm</code></td><td>Rate-limit the agent's LLM calls (requests/minute).</td></tr>
         <tr><td><code>reasoning</code> / <code>max_reasoning_attempts</code></td><td>Run a reasoning pass before answering.</td></tr>
         <tr><td><code>respect_context_window</code></td><td>Trim history to fit the model's context window.</td></tr>
+        <tr><td><code>parallel_tools</code></td><td>Run a turn's tool calls concurrently (nil uses the gem default of on).</td></tr>
         <tr><td><code>llm_config</code> (JSON)</td><td>Per-agent LLM override.</td></tr>
         <tr><td><code>memory_enabled</code> + <code>memory_scope</code> + <code>memory_short_term_limit</code></td><td>Enable cognitive memory.</td></tr>
       </tbody>
@@ -178,7 +179,8 @@
   name: "researcher", role: "Researcher", goal: "Find facts",
   reasoning: true,
   max_rpm: 30,
-  llm_config: { provider: "anthropic", model: "claude-sonnet-5" },
+  # Current Claude models also need RCrewAI's temperature set to nil.
+  llm_config: { provider: "anthropic", model: "claude-opus-5-5" },
   memory_enabled: true, memory_scope: "research", memory_short_term_limit: 20
 )</pre>
   </div>
@@ -250,6 +252,73 @@ end</pre>
 run.status   # "completed" / "failed"
 run.result   # the final flow state
 RcrewAI::Rails::FlowState.find_by(state_id: run.state_id)  # the persisted state</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Observation engine</h2>
+    <p>Every execution is traced as a tree of spans (crew, agent, task, LLM call, and tool call) with timings, token counts, and cost. See the trace at <code>/rcrewai/executions/:id/observation</code> and spend at <code>/rcrewai/observations/costs</code>.</p>
+    <pre>RcrewAI::Rails.configure do |config|
+  config.observation_enabled = true
+  config.observation_capture_prompts = :truncated  # :none | :truncated | :full
+  config.observation_retention_days = 30
+end</pre>
+    <p class="caption">Prune old spans with rake rcrewai:observation:prune. Token and cost data need an agent that runs through rcrewai's native tool runner; with a fallback such as Ollama without native tools, the cost dashboard is empty.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Checkpointing and resume</h2>
+    <p>Record each task's result so an interrupted run can resume without re-running and re-paying for completed tasks. Off by default; enable it globally or per crew. It needs the <code>rcrewai_checkpoints</code> table.</p>
+    <pre>RcrewAI::Rails.configure { |config| config.checkpoint_enabled = true }  # globally
+crew.update!(checkpoint_enabled: true)                                   # or per crew</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Concurrent tool calls</h2>
+    <p>rcrewai runs a turn's tool calls concurrently by default. Opt out on an agent whose tools aren't safe to run in parallel, or that must not fan out against a rate-limited API. Left <code>nil</code>, the gem's default applies.</p>
+    <pre>agent.update!(parallel_tools: false)</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>LLM interceptors</h2>
+    <p>Hooks that run around every LLM request the engine's agents make. Return a replacement to modify the payload or result, or <code>nil</code> to leave it untouched. A hook that raises is reported and skipped.</p>
+    <pre>RcrewAI::Rails.configure do |config|
+  config.llm_before_request = lambda do |payload, context|
+    Rails.logger.info("[llm] -> #{context[:provider]}/#{context[:model]}")
+    payload
+  end
+end</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Providers</h2>
+    <p>Set as an agent's <code>llm_config</code> provider or as <code>config.default_llm_provider</code>: <code>openai</code>, <code>anthropic</code>, <code>google</code>, <code>azure</code>, <code>ollama</code>, and:</p>
+    <table>
+      <thead><tr><th>Provider</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>openai_compatible</code></td><td>Any OpenAI-format endpoint. Requires RCrewAI's <code>base_url</code>.</td></tr>
+        <tr><td><code>bedrock</code></td><td>AWS Bedrock via the Converse API. Requires <code>aws_region</code>.</td></tr>
+        <tr><td><code>snowflake</code></td><td>Snowflake Cortex inference. Requires <code>snowflake_account</code>.</td></tr>
+        <tr><td><code>openai_responses</code></td><td>OpenAI's Responses API. Non-streaming only.</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">Current Claude models reject the temperature rcrewai sends by default, so set RCrewAI's temperature to nil to use them.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>rcrewai 0.10</h2>
+    <p>Keep-alive streaming connections apply automatically to Anthropic agents that stream. <code>CancelToken</code>, per-call <code>chat(model:)</code>, and <code>cached_tokens</code> are not exposed by the engine: <code>Execution#cancel!</code> only updates the record's status and does not stop a running stream. Call an rcrewai client directly from your own code to use them.</p>
   </div>
 </section>
 

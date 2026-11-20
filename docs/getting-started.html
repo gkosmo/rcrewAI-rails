@@ -176,7 +176,7 @@ $ rails db:migrate</pre>
 
     <h3>3. Manual route setup</h3>
     <pre>Rails.application.routes.draw do
-  mount RcrewAI::Rails::Engine => '/rcrewai'
+  mount RcrewAI::Rails::Engine => '/rcrewai' # set config.authenticate_with, or this answers 403 outside development
 end</pre>
     <p class="caption">The web UI is then at /rcrewai and the API at /rcrewai/api/v1/.</p>
   </div>
@@ -191,15 +191,16 @@ end</pre>
   config.enable_web_ui = true
   config.async_execution = true
   config.default_llm_provider = "openai"
-  config.default_llm_model = "gpt-4"
+  config.default_llm_model = "gpt-4o"
 
   # Objects for agent memory (optional)
   config.default_memory_embedder = RCrewAI::Knowledge::Embedder.new
   config.default_memory_store = RCrewAI::Memory::SqliteStore.new(path: "db/rcrewai_memory.sqlite3")
 end
 
-# Configure the base RcrewAI gem
-RcrewAI.configure do |config|
+# Configure the base rcrewai gem (note the capital C).
+# Keys in the environment are read automatically.
+RCrewAI.configure(validate: false) do |config|
   config.openai_api_key = ENV["OPENAI_API_KEY"]
 end</pre>
   </div>

@@ -60,10 +60,10 @@
   <h2>Execution Logs</h2>
   
   <div class="log-filters">
-    <%= link_to "All", execution_logs_path(@execution), class: "filter-btn", data: { turbo_frame: "logs" } %>
-    <%= link_to "Errors", execution_logs_path(@execution, level: "error"), class: "filter-btn", data: { turbo_frame: "logs" } %>
-    <%= link_to "Warnings", execution_logs_path(@execution, level: "warn"), class: "filter-btn", data: { turbo_frame: "logs" } %>
-    <%= link_to "Info", execution_logs_path(@execution, level: "info"), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "All", logs_execution_path(@execution), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "Errors", logs_execution_path(@execution, level: "error"), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "Warnings", logs_execution_path(@execution, level: "warn"), class: "filter-btn", data: { turbo_frame: "logs" } %>
+    <%= link_to "Info", logs_execution_path(@execution, level: "info"), class: "filter-btn", data: { turbo_frame: "logs" } %>
   </div>
 
   <%= turbo_frame_tag "logs", data: { turbo_action: "advance" } do %>
@@ -88,5 +88,5 @@
 </div>
 
 <% if @execution.running? %>
-  <%= turbo_stream_from @execution, :logs %>
+  <%= rcrewai_stream_from @execution, :logs %>
 <% end %>

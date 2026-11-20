@@ -10,7 +10,7 @@ Rails engine for integrating [RcrewAI](https://github.com/gkosmo/rcrewAI) into y
 - **Web UI**: Monitor and manage crews through a built-in interface
 - **Rails-Specific Tools**: Pre-built tools for ActiveRecord, ActionMailer, Rails cache, and more
 - **Configuration**: Flexible configuration through Rails initializers
-- **Full rcrewai 0.9 feature coverage** (see [rcrewai 0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities) capabilities):
+- **Runs on rcrewai 0.10, with features through 0.9 exposed on the models** (see [rcrewai 0.10](#rcrewai-010), [0.9](#rcrewai-09-capabilities), [0.8](#rcrewai-08-capabilities) and [0.7](#rcrewai-07-capabilities)):
   - Agent config: reasoning, per-agent LLM, rate limiting, context-window trimming, cognitive memory
   - Task output: structured output schemas, guardrails, file output, multimodal attachments
   - Crew: `before_kickoff`/`after_kickoff` hooks, planning, the `consensual` process, batch execution
@@ -147,6 +147,52 @@ end
 
 This makes the web UI available at `/rcrewai` and API endpoints at `/rcrewai/api/v1/`.
 
+## Security
+
+### Who can reach the dashboard and API
+
+Set `config.authenticate_with`. Until you do, every engine route, the JSON API included, answers 403 outside development.
+
+```ruby
+# config/initializers/rcrewai.rb
+RcrewAI::Rails.configure do |config|
+  config.authenticate_with = ->(controller) { controller.authenticate_user! } # Devise
+end
+```
+
+The callable runs before every engine controller and receives the controller. A truthy result lets the request through. Anything else is a 403, unless the callable already responded, as `authenticate_user!` or `redirect_to` do. To open the dashboard on purpose, use `->(_) { true }`.
+
+The API runs the same callable. It also keeps Rails' CSRF protection, so where forgery protection is on, a POST needs a CSRF token even from a client that passes the callable.
+
+### Which tool classes can be loaded
+
+Tool class names come from forms and database rows, so they're checked against `config.allowed_tool_classes` before anything is loaded. The list is empty by default, so existing tools must be added to it. Running an agent with a tool that isn't listed raises `RcrewAI::Rails::ToolAllowlist::NotAllowed`.
+
+```ruby
+config.allowed_tool_classes = ["RCrewAI::Tools::WebSearch", MyApp::SearchTool]
+```
+
+### Action Cable
+
+The engine no longer mounts Action Cable, so it adds no WebSocket endpoint. Live updates use your app's Action Cable, at whatever path it's configured, normally `/cable`. Your app needs Action Cable loaded and a working adapter in `config/cable.yml`. Without Action Cable the dashboard still renders but doesn't update by itself.
+
+Requests to your Action Cable endpoint don't pass through `authenticate_with`. What protects the dashboard's streams:
+
+- **Stream names are signed.** A browser can only subscribe to a stream whose signed name it got from a dashboard page, and those pages are behind `authenticate_with`.
+- **The signatures don't expire.** Someone who loaded a page keeps a working name for that stream after losing access. Authenticate connections in your `ApplicationCable::Connection` if that matters to you.
+
+Streams carry execution logs and traces, which can include prompts and tool results.
+
+## Running crews
+
+- **Retries:** a failed run isn't repeated by default, because it may have sent emails or spent money. Set `config.crew_job_attempts` above 1 to opt in. With checkpointing on, a retry resumes the run and skips finished tasks. Tools in the task that failed run again, and without checkpointing the whole run repeats.
+- **Task retries:** the engine sets the core gem's task retries to `config.task_max_retries`, default 0.
+- **MCP servers:** connect them in your app and return them per agent from `config.agent_mcp_tools`. They can't be configured from the dashboard, since a stdio server starts a process.
+
+## Assets
+
+The dashboard serves its own CSS and Turbo from the engine, under `<mount path>/assets/`, so it doesn't need Sprockets, Propshaft, Webpacker or your `application` assets. If your app sets a Content Security Policy, these count as same-origin and use its nonce.
+
 ## Configuration
 
 Configure RcrewAI Rails in `config/initializers/rcrewai.rb`:
@@ -164,15 +210,19 @@ RcrewAI::Rails.configure do |config|
   
   # Default LLM settings
   config.default_llm_provider = "openai"
-  config.default_llm_model = "gpt-4"
+  config.default_llm_model = "gpt-4o"
   
   # Logging
   config.enable_logging = true
   config.log_level = :info
 end
 
-# Configure the base RcrewAI gem
-RcrewAI.configure do |config|
+# Configure the base rcrewai gem. It reads provider keys such as OPENAI_API_KEY
+# and ANTHROPIC_API_KEY from the environment on its own, so this is only needed
+# for values set in code. Note the capital C: `RcrewAI.configure` is the engine's
+# configuration, which has no provider settings. `validate: false` stops a missing
+# key from failing boot in places that don't call an LLM, such as assets:precompile.
+RCrewAI.configure(validate: false) do |config|
   config.openai_api_key = ENV["OPENAI_API_KEY"]
   # Add other LLM provider keys as needed
 end
@@ -239,14 +289,20 @@ execution = crew.execute(topic: "AI in Healthcare")
 
 ### Using Rails-Specific Tools
 
+The tools are not loaded with the engine, so require the ones you use:
+
 ```ruby
+require "rcrewai/rails/tools/active_record_tool"
+require "rcrewai/rails/tools/rails_cache_tool"
+require "rcrewai/rails/tools/action_mailer_tool"
+
 class DataAnalystAgent
   include RcrewAI::Rails::AgentBuilder
   
   agent_role "Data Analyst"
   agent_goal "Analyze application data"
   
-  tools [
+  tools(
     RcrewAI::Rails::Tools::ActiveRecordTool.new(
       model_class: User,
       allowed_methods: [:count, :where, :pluck]
@@ -256,9 +312,12 @@ class DataAnalystAgent
       mailer_class: ReportMailer,
       allowed_methods: [:send_report]
     )
-  ]
+  )
 end
 ```
+
+Pass the tools as separate arguments, not as one array: `tools [a, b]` nests the
+array and the agent fails when it lists its tools.
 
 ### Monitoring Executions
 
@@ -280,12 +339,35 @@ crew.execute_async(inputs)
 crew.execute_sync(inputs)
 
 # Custom job options
-CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
+RcrewAI::Rails::CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)
+```
+
+## rcrewai 0.10
+
+This engine requires [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.10.0`. The
+upgrade needs no migration. rcrewai 0.10 adds live streaming features to its
+Anthropic client, and most of them work at the client level, so the engine has no
+settings for them:
+
+| rcrewai 0.10 feature | In this engine |
+|---|---|
+| Keep-alive connection for streaming requests | Applies automatically to Anthropic agents that stream |
+| `config.base_url` for Anthropic | Set it in `RCrewAI.configure` |
+| `RCrewAI::CancelToken` / `chat(cancel:)` | Not exposed. `Execution#cancel!` only updates the record's status and does not stop a running stream |
+| `chat(model:)` per-call override | Not exposed. Use an agent's `llm_config` to choose its model |
+| `cached_tokens` on usage | Not recorded. The observation engine does not store it on spans or rollups |
+
+To use cancellation or per-call models, call an rcrewai client directly from your
+own code.
+
+**Current Claude models:** these reject the `temperature` that rcrewai sends by
+default, so turn it off globally. A per-agent `llm_config` can't remove it.
+
+```ruby
+RCrewAI.configure(validate: false) { |config| config.temperature = nil }
 ```
 
 ## rcrewai 0.9 capabilities
-
-This engine tracks [rcrewai](https://github.com/gkosmo/rcrewAI) `~> 0.9`.
 
 ### Concurrency
 
@@ -397,7 +479,7 @@ existing records are unaffected — set only what you need.
 | `reasoning` / `max_reasoning_attempts` | Run a planning/reasoning pass before answering |
 | `respect_context_window` | Trim history to fit the model's context window |
 | `parallel_tools` | Run a turn's tool calls concurrently (rcrewai 0.9; `nil` uses the gem default of on) |
-| `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-sonnet-5" }` |
+| `llm_config` (JSON) | Per-agent LLM override, e.g. `{ "provider": "anthropic", "model": "claude-opus-5-5" }` (see the [`temperature` note](#rcrewai-010)) |
 | `memory_enabled` + `memory_scope` + `memory_short_term_limit` | Enable cognitive memory (see below) |
 
 ```ruby
@@ -405,7 +487,8 @@ agent = crew.agents.create!(
   name: "researcher", role: "Researcher", goal: "Find facts",
   reasoning: true,
   max_rpm: 30,
-  llm_config: { provider: "anthropic", model: "claude-sonnet-5" },
+  # Current Claude models also need RCrewAI's temperature set to nil; see "rcrewai 0.10".
+  llm_config: { provider: "anthropic", model: "claude-opus-5-5" },
   memory_enabled: true, memory_scope: "research", memory_short_term_limit: 20
 )
 ```
@@ -500,6 +583,7 @@ The engine provides JSON API endpoints:
 ```
 GET    /rcrewai/api/v1/crews
 GET    /rcrewai/api/v1/crews/:id
+POST   /rcrewai/api/v1/crews
 POST   /rcrewai/api/v1/crews/:id/execute
 GET    /rcrewai/api/v1/executions
 GET    /rcrewai/api/v1/executions/:id

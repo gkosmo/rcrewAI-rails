@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RcrewAI Rails — AI agent crews for Rails</title>
-<meta name="description" content="A Rails engine for orchestrating AI agents with ActiveRecord persistence, background jobs, generators, a web dashboard, and full rcrewai 0.7 feature coverage.">
+<meta name="description" content="A Rails engine for orchestrating AI agents with ActiveRecord persistence, background jobs, generators, a web dashboard, built on rcrewai 0.10.">
 <style>
   :root {
     --crimson: #c4221f;
@@ -156,7 +156,7 @@
 <section class="hero">
   <div class="wrap">
     <h1>Build AI agent crews,<br><span class="accent">the Rails way.</span></h1>
-    <p class="lead">A Rails engine for orchestrating AI agents — with ActiveRecord persistence, background-job execution, generators, a web dashboard, and full rcrewai 0.7 feature coverage.</p>
+    <p class="lead">A Rails engine for orchestrating AI agents — with ActiveRecord persistence, background-job execution, generators, a web dashboard, built on rcrewai 0.10.</p>
     <div class="install-line"><span class="prompt">gem </span>'rcrewai-rails'</div>
     <div class="cta">
       <a class="btn btn-primary" href="getting-started.html">Get Started</a>
@@ -193,7 +193,7 @@
       <div class="feature">
         <span class="ic">🤖</span>
         <h3>Multi-LLM Support</h3>
-        <p>OpenAI GPT, Anthropic Claude, Google Gemini, Azure OpenAI, and Ollama.</p>
+        <p>OpenAI, Anthropic Claude, Google Gemini, Azure OpenAI, Ollama, AWS Bedrock, Snowflake Cortex, and any OpenAI-compatible endpoint.</p>
       </div>
       <div class="feature">
         <span class="ic">🧰</span>
@@ -206,8 +206,8 @@
 
 <section>
   <div class="wrap">
-    <h2>What's new <span class="badge">0.4 – 0.7</span></h2>
-    <p class="sub">Full parity with rcrewai 0.4–0.7, surfaced through ActiveRecord.</p>
+    <h2>What's new <span class="badge">0.4 – 0.10</span></h2>
+    <p class="sub">rcrewai features through 0.9, surfaced through ActiveRecord, on rcrewai 0.10.</p>
     <div class="whatsnew">
       <div class="wn-item">
         <h4>Agent intelligence</h4>
@@ -232,6 +232,22 @@
       <div class="wn-item">
         <h4>Cognitive memory</h4>
         <p>Semantic recall with a pluggable embedder and SQLite-backed store.</p>
+      </div>
+      <div class="wn-item">
+        <h4>Observation engine</h4>
+        <p>Span-level traces of every run, with timings, tokens, cost, and a live view.</p>
+      </div>
+      <div class="wn-item">
+        <h4>Checkpointing</h4>
+        <p>Resume an interrupted run without re-running the tasks it already finished.</p>
+      </div>
+      <div class="wn-item">
+        <h4>Interceptors and providers</h4>
+        <p>Hooks around every LLM request, plus Bedrock, Snowflake, and OpenAI-compatible endpoints.</p>
+      </div>
+      <div class="wn-item">
+        <h4>Concurrent tool calls</h4>
+        <p>A turn's tool calls run in parallel, with a per-agent opt-out.</p>
       </div>
     </div>
   </div>

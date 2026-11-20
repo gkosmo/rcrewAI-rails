@@ -186,6 +186,7 @@
       <tbody>
         <tr><td><span class="verb get">GET</span></td><td class="method">/crews</td></tr>
         <tr><td><span class="verb get">GET</span></td><td class="method">/crews/:id</td></tr>
+        <tr><td><span class="verb post">POST</span></td><td class="method">/crews</td></tr>
         <tr><td><span class="verb post">POST</span></td><td class="method">/crews/:id/execute</td></tr>
         <tr><td><span class="verb get">GET</span></td><td class="method">/executions</td></tr>
         <tr><td><span class="verb get">GET</span></td><td class="method">/executions/:id</td></tr>
@@ -204,7 +205,7 @@
 crew.execute_sync(inputs)    # run inline
 
 # Custom job options:
-CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)</pre>
+RcrewAI::Rails::CrewExecutionJob.set(wait: 5.minutes).perform_later(crew, inputs)</pre>
   </div>
 </section>
 
