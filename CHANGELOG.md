@@ -29,6 +29,15 @@ Skips 0.10 and 0.11 to track rcrewai's version. Agents with tools now work on re
 - **Behavior change:** `default_llm_model` and the generated initializer now use `gpt-4o`, because OpenAI shut `gpt-4` down on 2026-10-23.
 - The dashboard serves its own CSS and Turbo instead of the host's `application` assets.
 
+### Fixed
+- **`rails generate rcrewai:rails:install` and `rcrewai:rails:crew` found no generator,** while exiting 0. Both now work as documented.
+- **The dashboard crashed on Webpacker and other hosts without a Sprockets `application.js`,** because the layout linked the host's assets. It also has styles for the first time.
+- **Dashboard pages that always crashed now render:** execution, agent and task pages named columns and a route that don't exist. Agent and task forms no longer offer or accept those columns.
+- **Agents with dashboard-configured tools crashed when they ran,** because `Agent#instantiated_tools` treated tool records as JSON. They now get their active tools.
+- Delete links relied on rails-ujs and did nothing without it. They now use Turbo.
+- **Docs and install template:** the README and docs site set `config.openai_api_key` inside `RcrewAI.configure`, which is the engine's configuration, so the example raised `NoMethodError`. They now use `RCrewAI.configure(validate: false)`. The generated initializer's commented example also named settings that don't exist (`groq_api_key`, `default_model`).
+- **Docs:** the README's `tools [ ... ]` example nested the array and broke the agent, and it didn't say that tools must be required explicitly.
+- **Docs:** corrected the `CrewExecutionJob` namespace, the rcrewai repo link and the gem's documentation URL, listed `POST /crews`, and brought the docs site up from rcrewai 0.7.
 
 ## [0.9.0] - 2026-09-10
 
@@ -334,7 +343,8 @@ existing agents, tasks, and crews build unchanged.
 ### Changed
 - Rename generators from `rcrew_a_i` to `rcrewai` namespacing.
 
-[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/gkosmo/rcrewai-rails/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.9.0...v0.12.0
 [0.9.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/gkosmo/rcrewai-rails/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/gkosmo/rcrewai-rails/compare/v0.7.1...v0.8.0
