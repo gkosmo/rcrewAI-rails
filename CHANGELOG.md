@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Run the new migration when upgrading (`rails rcrew_ai_rails:install:migrations`, then `rails db:migrate`). Agents can't be built without it.
 
 ### Added
+- `config.agent_harness`, which gives engine agents an rcrewai harness, and `harness` in the `AgentBuilder` DSL. They need an rcrewai with `RCrewAI::Harness`, which isn't released yet; with an older one, asking for a harness raises `RcrewAI::Rails::UnsupportedOption`. See the README.
+- Traces show why a harness stopped a tool call (`blocked_by`, `blocked_reason`) and which hooks failed (`hook_failures`).
 - `require_approval_for_tools` on engine agents, in the dashboard forms and in the `AgentBuilder` DSL. Needs rcrewai 0.12 or later and an `approval_handler` for jobs; with an older rcrewai, building such an agent raises `RcrewAI::Rails::UnsupportedOption`. See the README.
 
 ### Fixed
