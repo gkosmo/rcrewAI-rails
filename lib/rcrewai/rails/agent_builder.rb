@@ -33,6 +33,14 @@ module RcrewAI
           @allow_delegation || false
         end
 
+        def require_approval_for_tools(required = nil)
+          @require_approval_for_tools = required unless required.nil?
+          return @require_approval_for_tools unless @require_approval_for_tools.nil?
+
+          # Inherited, so subclassing a guarded builder doesn't drop the guard.
+          superclass.respond_to?(:require_approval_for_tools) ? superclass.require_approval_for_tools : false
+        end
+
         def max_iterations(iterations = nil)
           @max_iterations = iterations if iterations
           @max_iterations || 25
@@ -88,7 +96,9 @@ module RcrewAI
           tools: instantiate_tools,
           verbose: verbose?,
           allow_delegation: @attributes[:allow_delegation] || self.class.allow_delegation,
-          max_iterations: @attributes[:max_iterations] || self.class.max_iterations
+          max_iterations: @attributes[:max_iterations] || self.class.max_iterations,
+          # Either one turns it on; an attribute can't switch off the class's.
+          **ToolApprovalOption.options(@attributes[:require_approval_for_tools] || self.class.require_approval_for_tools)
         )
       end
 

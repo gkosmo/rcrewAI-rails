@@ -11,7 +11,6 @@ module RcrewAI
       validates :name, presence: true
       validates :role, presence: true
 
-      serialize :tools, coder: JSON, type: Array
       serialize :llm_config, coder: JSON
 
       scope :active, -> { where(active: true) }
@@ -37,7 +36,7 @@ module RcrewAI
       # rcrewai 0.5.0+ agent options. Only emit a key when it is meaningfully
       # set, so an all-default record constructs exactly as it did pre-0.5.
       def agent_options
-        opts = {}
+        opts = ToolApprovalOption.options(require_approval_for_tools)
         opts[:max_rpm] = max_rpm if max_rpm.present? && max_rpm.positive?
         opts[:reasoning] = reasoning if reasoning
         opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
@@ -84,18 +83,16 @@ module RcrewAI
         Array(hook.call(self)).flat_map { |entry| entry.respond_to?(:tools) ? entry.tools : entry }
       end
 
+      # Returns false when the record is invalid, e.g. the class isn't in
+      # config.allowed_tool_classes.
       def add_tool(tool_class, params = {})
-        self.tools ||= []
-        self.tools << {
-          "class" => tool_class.to_s,
-          "params" => params
-        }
-        save
+        tool = Tool.create(agent: self, name: tool_class.to_s, tool_class: tool_class.to_s, config: params)
+        tools.reset
+        tool.persisted?
       end
 
       def remove_tool(tool_class)
-        self.tools = tools.reject { |t| t["class"] == tool_class.to_s }
-        save
+        tools.where(tool_class: tool_class.to_s).destroy_all
       end
     end
   end

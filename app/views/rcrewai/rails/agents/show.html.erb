@@ -53,6 +53,12 @@
           <%= @agent.allow_delegation ? 'Enabled' : 'Disabled' %>
         </span>
       </div>
+      <div class="detail-item">
+        <strong>Tool Approval:</strong>
+        <span class="badge <%= @agent.require_approval_for_tools ? 'badge-info' : 'badge-secondary' %>">
+          <%= @agent.require_approval_for_tools ? 'Required' : 'Not required' %>
+        </span>
+      </div>
       <% if @agent.max_iterations %>
         <div class="detail-item">
           <strong>Max Iterations:</strong> <%= @agent.max_iterations %>

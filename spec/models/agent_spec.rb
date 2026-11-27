@@ -25,12 +25,6 @@ RSpec.describe RcrewAI::Rails::Agent, type: :model do
       expect(rcrew.allow_delegation).to be false
       expect(rcrew.max_iterations).to eq(8)
     end
-
-    # NOTE: The Agent model declares both `has_many :tools` (the join model)
-    # and `serialize :tools` (the JSON column). The association wins and the
-    # JSON column is effectively unreachable — pre-existing engine bug, not
-    # in scope for this branch. When that's untangled, add a spec here that
-    # round-trips a serialized tool config through Agent#instantiated_tools.
   end
 
   describe "0.5.0 option forwarding" do

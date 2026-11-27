@@ -67,6 +67,12 @@
     </div>
 
     <div class="form-group">
+      <%= form.label :require_approval_for_tools, "Require Tool Approval", class: "form-label" %>
+      <%= form.check_box :require_approval_for_tools, class: "form-checkbox" %>
+      <span class="form-help">Run no tool until your app's approval handler says yes. Needs rcrewai 0.12 or later.</span>
+    </div>
+
+    <div class="form-group">
       <%= form.label :max_iterations, "Max Iterations", class: "form-label" %>
       <%= form.number_field :max_iterations, class: "form-input", min: 1 %>
       <span class="form-help">Maximum number of iterations (optional)</span>
