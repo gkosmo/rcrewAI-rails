@@ -41,6 +41,7 @@ module RcrewAI
           when RCrewAI::Events::TextDone       then on_text_done(event)
           when RCrewAI::Events::Thinking       then on_thinking(event)
           when RCrewAI::Events::Error          then on_error(event)
+          else on_harness_event(event)
           end
         rescue StandardError => e
           warn_failure(e)
@@ -161,6 +162,33 @@ module RcrewAI
           close_span(id, status: "error")
         end
 
+        # Matched by name: the classes only exist in an rcrewai with harnesses,
+        # and naming a missing one in the case above would raise for every
+        # event listed after it. Both arrive while the call's span is open.
+        def on_harness_event(event)
+          case event.class.name
+          when "RCrewAI::Events::ToolBlocked"    then on_tool_blocked(event)
+          when "RCrewAI::Events::ToolHookFailed" then on_hook_failed(event)
+          end
+        end
+
+        def on_tool_blocked(event)
+          id = @stack.span_for_call(call_id: event.call_id)
+          return unless id
+
+          merge_attributes(id, "blocked_by" => event.source.to_s,
+                               "blocked_reason" => truncate(event.reason.to_s))
+        end
+
+        def on_hook_failed(event)
+          id = @stack.span_for_call(call_id: event.call_id)
+          return unless id
+
+          failure = { "hook" => event.hook.to_s, "phase" => event.phase.to_s,
+                      "error" => truncate(event.error.to_s) }
+          append_attribute(id, "hook_failures", failure)
+        end
+
         def on_usage(event)
           id = @stack.current(agent: event.agent, run_id: SpanStack.run_id_for(event))
           return unless id
@@ -247,6 +275,13 @@ module RcrewAI
           return unless span
 
           @writer.update_span(span_id, attributes_json: JSON.generate(span.attributes_hash.merge(hash)))
+        end
+
+        def append_attribute(span_id, key, value)
+          span = Span.find_by(id: span_id)
+          return unless span
+
+          merge_attributes(span_id, key => Array(span.attributes_hash[key]) + [value])
         end
 
         # Truncates to a byte cap without splitting a multi-byte character.

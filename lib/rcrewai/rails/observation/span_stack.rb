@@ -78,6 +78,11 @@ module RcrewAI
           @mutex.synchronize { @calls[call_id] = span_id }
         end
 
+        # The span of a call that is still open.
+        def span_for_call(call_id:)
+          @mutex.synchronize { @calls[call_id] }
+        end
+
         # Resolves and forgets a call id. Returns nil if never registered,
         # which happens when a result arrives without a matching start.
         def resolve_call(call_id:)

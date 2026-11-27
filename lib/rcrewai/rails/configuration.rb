@@ -10,7 +10,7 @@ module RcrewAI
                     :observation_flush_every, :observation_retention_days,
                     :checkpoint_enabled, :checkpoint_store,
                     :llm_before_request, :llm_after_response,
-                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools,
+                    :authenticate_with, :allowed_tool_classes, :agent_mcp_tools, :agent_harness,
                     :crew_job_attempts, :crew_job_retry_wait, :task_max_retries
 
       def initialize
@@ -51,6 +51,9 @@ module RcrewAI
         # ->(agent) { [tools or connected MCP clients] }. The host owns the
         # connections, so nothing a form submits can start a process.
         @agent_mcp_tools = nil
+        # ->(agent) { an RCrewAI::Harness, or nil }. Lives in the host's code,
+        # so nothing a form submits can loosen it.
+        @agent_harness = nil
         # Runs can have side effects, so a failed run isn't repeated unless the
         # host opts in. 1 means no retry.
         @crew_job_attempts = 1

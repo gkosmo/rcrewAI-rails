@@ -200,6 +200,47 @@ end
 Only `true` or `RCrewAI::ToolApproval.approve` lets a call run. The setting covers
 all of an agent's tools. The engine has no screen for approving calls by hand.
 
+### Controlling tool calls with a harness
+
+A harness is rcrewai's allow, ask and block rules for tool calls, with hooks that
+run before and after them. See the core gem's
+[harness reference](https://github.com/gkosmo/rcrewAI/blob/main/docs/api/harness.md)
+for what rules and hooks can do, and its limits. **It is not a sandbox.**
+
+Give engine agents (the ones stored in your database) their harness from an
+initializer:
+
+```ruby
+READ_ONLY = RCrewAI::Harness.new(default: :ask) do
+  allow :web_search, :file_reader
+  block :code_executor, reason: "No code execution here. Describe the change instead."
+end
+
+RcrewAI::Rails.configure do |config|
+  config.agent_harness = ->(agent) { READ_ONLY }
+end
+```
+
+- The hook gets the agent record. Return a harness, or `nil` or `false` for an
+  agent that needs none, so check that a condition like `agent.name == "x" && H`
+  leaves no agent unguarded by accident. If it raises, or returns anything else,
+  the agent isn't built.
+- Rules use the tool's name as the model sees it, such as `file_reader`, or
+  `server__tool` for MCP tools.
+- Tool calls that need an answer go to `config.approval_handler`, as in
+  [Which tool calls need approval](#which-tool-calls-need-approval). Without one,
+  jobs refuse them. With `default: :ask`, that includes every unlisted tool.
+- **`config.agent_harness` doesn't cover `AgentBuilder` classes.** Declare theirs
+  with `harness READ_ONLY` in the class, or pass `harness:` to `new`, which
+  replaces the class's. Subclasses keep it.
+- With an rcrewai that has no `RCrewAI::Harness`, asking for one raises
+  `RcrewAI::Rails::UnsupportedOption`, because that version would ignore it.
+- In the trace view, a tool call's details show `blocked_by` and
+  `blocked_reason` for a call the harness stopped, and `hook_failures` for hooks
+  that failed.
+
+The harness lives in your code. The dashboard can't view or change it.
+
 ### Action Cable
 
 The engine no longer mounts Action Cable, so it adds no WebSocket endpoint. Live updates use your app's Action Cable, at whatever path it's configured, normally `/cable`. Your app needs Action Cable loaded and a working adapter in `config/cable.yml`. Without Action Cable the dashboard still renders but doesn't update by itself.

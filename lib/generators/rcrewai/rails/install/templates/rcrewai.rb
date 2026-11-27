@@ -21,6 +21,12 @@ RcrewAI::Rails.configure do |config|
   # DOCS_MCP = RCrewAI::MCP::Client.connect(url: "https://example.com/mcp")
   # config.agent_mcp_tools = ->(agent) { agent.name == "researcher" ? [DOCS_MCP] : [] }
 
+  # A harness controls an engine agent's tool calls: allow, ask or block each
+  # one, with hooks before and after. It needs an rcrewai with RCrewAI::Harness.
+  # config.agent_harness = lambda do |agent|
+  #   RCrewAI::Harness.new(default: :ask) { allow :web_search }
+  # end
+
   # A failed run isn't repeated by default, because it may have side effects.
   # Set attempts above 1 to retry. With checkpointing on, a retry resumes and
   # skips finished tasks. Without it, the whole run repeats, tools included.

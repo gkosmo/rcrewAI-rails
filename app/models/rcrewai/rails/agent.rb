@@ -37,6 +37,7 @@ module RcrewAI
       # set, so an all-default record constructs exactly as it did pre-0.5.
       def agent_options
         opts = ToolApprovalOption.options(require_approval_for_tools)
+        opts.merge!(HarnessOption.for_record(self))
         opts[:max_rpm] = max_rpm if max_rpm.present? && max_rpm.positive?
         opts[:reasoning] = reasoning if reasoning
         opts[:max_reasoning_attempts] = max_reasoning_attempts if reasoning && max_reasoning_attempts
