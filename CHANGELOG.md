@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Run the new migration when upgrading (`rails rcrew_ai_rails:install:migrations`, then `rails db:migrate`). Agents can't be built without it.
+
+### Added
+- `require_approval_for_tools` on engine agents, in the dashboard forms and in the `AgentBuilder` DSL. Needs rcrewai 0.12 or later and an `approval_handler` for jobs; with an older rcrewai, building such an agent raises `RcrewAI::Rails::UnsupportedOption`. See the README.
+
+### Fixed
+- `Agent#add_tool` raised `ActiveRecord::AssociationTypeMismatch` on every call, and `Agent#remove_tool` couldn't work either. Both now manage the agent's tool records. The unused `serialize :tools` declaration is gone.
+
 ## [0.12.0] - 2026-11-27
 
 Skips 0.10 and 0.11 to track rcrewai's version. Agents with tools now work on real providers, and current Claude models are usable.

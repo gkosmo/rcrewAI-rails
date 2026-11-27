@@ -44,6 +44,7 @@ ActiveRecord::Schema.define(version: 1) do
     t.integer :max_reasoning_attempts, default: 3
     t.boolean :respect_context_window, default: false, null: false
     t.boolean :parallel_tools
+    t.boolean :require_approval_for_tools, default: false, null: false
     t.text :llm_config
     t.boolean :active, default: true
     t.timestamps

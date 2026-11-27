@@ -104,8 +104,14 @@ $ rails db:migrate
 
 (The task name comes from the engine's railtie name, `rcrew_ai_rails`.)
 
-Rails copies only the migrations your app does not already have. Upgrading to
-0.9.0 from 0.8.x adds one:
+Rails copies only the migrations your app does not already have. The unreleased
+version adds one to 0.12.0:
+
+| Migration | Purpose |
+|---|---|
+| `014_add_require_approval_for_tools_to_rcrewai_agents` | `rcrewai_agents.require_approval_for_tools` — per-agent tool approval |
+
+Upgrading to 0.9.0 from 0.8.x adds one:
 
 | Migration | Purpose |
 |---|---|
@@ -171,6 +177,28 @@ Tool class names come from forms and database rows, so they're checked against `
 ```ruby
 config.allowed_tool_classes = ["RCrewAI::Tools::WebSearch", MyApp::SearchTool]
 ```
+
+### Which tool calls need approval
+
+Turn on **Require Tool Approval** for an agent (`require_approval_for_tools`) and
+rcrewai asks before each of its tool calls. This needs rcrewai 0.12 or later.
+With an older version the engine raises `RcrewAI::Rails::UnsupportedOption`
+instead of building the agent, because older versions run the tools anyway.
+
+Jobs have no terminal, so **every call is refused unless your app answers**. Set a
+handler in an initializer. This one approves a fixed list and refuses the rest:
+
+```ruby
+RCrewAI.configure(validate: false) do |config|
+  config.approval_handler = lambda do |request|
+    # request.tool_name, request.arguments, request.agent
+    %w[websearch filereader].include?(request.tool_name)
+  end
+end
+```
+
+Only `true` or `RCrewAI::ToolApproval.approve` lets a call run. The setting covers
+all of an agent's tools. The engine has no screen for approving calls by hand.
 
 ### Action Cable
 
