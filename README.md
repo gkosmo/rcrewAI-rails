@@ -192,7 +192,7 @@ handler in an initializer. This one approves a fixed list and refuses the rest:
 RCrewAI.configure(validate: false) do |config|
   config.approval_handler = lambda do |request|
     # request.tool_name, request.arguments, request.agent
-    %w[websearch filereader].include?(request.tool_name)
+    %w[web_search file_reader].include?(request.tool_name)
   end
 end
 ```
